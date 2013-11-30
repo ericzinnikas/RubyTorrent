@@ -1,6 +1,25 @@
 #Need to handle Strings, Integers, Lists (Arrays), Dictionaries (Hashes)
 #so we will just extend these Ruby Classes with our own methods
 
+module Torrent
+
+class Bencode
+	def self.decode(fh)
+		case fh
+		when String.is_bencoded?(fh)
+			String.parse_bencode(fh)
+		when Integer.is_bencoded?(fh)
+			Integer.parse_bencode(fh)
+		when Array.is_bencoded?(fh)
+			Array.parse_bencode(fh)
+		when Hash.is_bencoded?(fh)
+			Hash.parse_bencode(fh)
+		end
+	end
+end
+
+end
+
 class String
 	def self.is_bencoded?(fh) # are we looking at a string, etc. ?
 		ch = fh.getc #just need first char of input
@@ -12,8 +31,13 @@ class String
 		self.length.to_s + ":" + self.to_s
 	end
 
-	def self.parse_bencode()
-		# TODO
+	def self.parse_bencode(fh)
+		len = fh.getc
+		while (x = fh.getc) != ":"
+			len += x	
+		end
+
+		fh.read( len.to_i )
 	end
 end
 
@@ -28,8 +52,18 @@ class Integer
 		"i" + self.to_s + "e"
 	end
 
-	def self.parse_bencode()
-		# TODO
+	def self.parse_bencode(fh)
+		ch = fh.getc # should be 'i', do some error checking?
+		if ch != 'i'
+			# TODO
+		end
+		int = String.new # make sure we don't add ints or something?
+
+		while (x = fh.getc) != "e"
+			int += x	
+		end
+
+		int.to_i
 	end
 end
 
@@ -46,8 +80,19 @@ class Array
 		}.join + "e"
 	end
 
-	def self.parse_bencode()
-		# TODO
+	def self.parse_bencode(fh)
+		ch = fh.getc
+		if ch != "l"
+			# TODO
+		end
+
+		out = Array.new
+
+		while (x = fh.getc) != "e"
+			fh.ungetc x
+			out[] = Torrent::Bencode.decode(fh)
+		end
+		return out
 	end
 end
 
@@ -65,7 +110,19 @@ class Hash
 		}.join + "e"
 	end
 
-	def self.parse_bencode()
-		# TODO
+	def self.parse_bencode(fh)
+		ch = fh.getc
+		if ch != "d"
+			# TODO
+		end
+
+		out = Hash.new
+
+		while (x = fh.getc) != "e"
+			fh.ungetc x
+			key = String.parse_bencode(fh) # keys must be bencoded strings
+			out[key] = Torrent::Bencode.decode(fh)
+		end
+		return out
 	end
 end
