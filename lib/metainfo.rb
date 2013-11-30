@@ -1,4 +1,5 @@
 #handle everything dealing w/metainfo files here
+#need to build some tests for this
 
 module Torrent
 
@@ -7,7 +8,6 @@ class Metainfo
 		@fh = fh
 	end
 
-	#What do we need to keep track of?
 	@info = Hash.new
 	@announce = String.new
 	@announceList = Array.new
@@ -28,7 +28,6 @@ class Metainfo
 		return true
 	end
 
-	# need some getter methods, etc.?
 	def getName
 		@info["name"]
 	end
