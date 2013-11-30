@@ -1,6 +1,5 @@
 #handle everything dealing w/metainfo files here
 
-
 module Torrent
 
 class Metainfo
