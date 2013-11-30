@@ -5,15 +5,18 @@ module Torrent
 
 class Bencode
 	def self.decode(fh)
-		case fh
-		when String.is_bencoded?(fh)
+		if String.is_bencoded?(fh)
 			String.parse_bencode(fh)
-		when Integer.is_bencoded?(fh)
+		elsif Integer.is_bencoded?(fh)
 			Integer.parse_bencode(fh)
-		when Array.is_bencoded?(fh)
+		elsif Array.is_bencoded?(fh)
 			Array.parse_bencode(fh)
-		when Hash.is_bencoded?(fh)
+		elsif Hash.is_bencoded?(fh)
 			Hash.parse_bencode(fh)
+		else
+			errCh = fh.getc
+			fh.ungetc errCh
+			"Error at char: #{errCh}"
 		end
 	end
 end
@@ -24,7 +27,7 @@ class String
 	def self.is_bencoded?(fh) # are we looking at a string, etc. ?
 		ch = fh.getc #just need first char of input
 		fh.ungetc ch #put it back
-		(1 .. 9).include? ch
+		("1" .. "9").include? ch
 	end
 
 	def to_bencode
@@ -33,7 +36,7 @@ class String
 
 	def self.parse_bencode(fh)
 		len = fh.getc
-		while (x = fh.getc) != ":"
+		while( (x = fh.getc) != ":")
 			len += x	
 		end
 
@@ -59,7 +62,7 @@ class Integer
 		end
 		int = String.new # make sure we don't add ints or something?
 
-		while (x = fh.getc) != "e"
+		while( (x = fh.getc) != "e")
 			int += x	
 		end
 
@@ -88,7 +91,7 @@ class Array
 
 		out = Array.new
 
-		while (x = fh.getc) != "e"
+		while( (x = fh.getc) != "e")
 			fh.ungetc x
 			out[] = Torrent::Bencode.decode(fh)
 		end
@@ -118,7 +121,7 @@ class Hash
 
 		out = Hash.new
 
-		while (x = fh.getc) != "e"
+		while( (x = fh.getc) != "e")
 			fh.ungetc x
 			key = String.parse_bencode(fh) # keys must be bencoded strings
 			out[key] = Torrent::Bencode.decode(fh)
