@@ -3,7 +3,7 @@
 
 ###Description
 * Implement a BitTorrent client
-..* Should be able to interoperate with commercial/open-source clients
+  + Should be able to interoperate with commercial/open-source clients
 - Demonstrate our implementation downloads files within **10%** of the speed of an official client (with a comprable number of peers)
 - Devise an experiment to demonstrate our client is *fast enough* and *stable* in comparison to the official BitTorrent client
 
