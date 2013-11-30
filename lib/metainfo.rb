@@ -1,3 +1,6 @@
+#handle everything dealing w/metainfo files here
+
+
 module Torrent
 
 class Metainfo
@@ -5,6 +8,7 @@ class Metainfo
 		@fh = fh
 	end
 
+	#What do we need to keep track of?
 	@info = Hash.new
 	@announce = String.new
 	@announceList = Array.new
@@ -26,6 +30,22 @@ class Metainfo
 	end
 
 	# need some getter methods, etc.?
+	def getName
+		@info["name"]
+	end
+
+	def getInfo
+		@info
+	end
+
+	def getAnnounce
+		@announce
+	end
+
+	def getAnnounceList
+		@announceList
+	end
+
 end
 
 end
