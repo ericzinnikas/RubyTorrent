@@ -13,10 +13,13 @@
 * Under-reporting, compare performance to official client
 * A protocol to detect under-reporting
 
-###Notes
+###Details
 * May use third-party bencode library
 * May use language of choice
 * Work in teams of two
+
+###Notes
+* See [here](NOTES.md)
 
 ###References
 [1] Dave Levin, Katrina LaCurts, Neil Spring, and Bobby Bhattacharjee. Bittorrent is an auction: Analyzing and improving bittorrent's incentives. SIGCOMM Comput. Commun. Rev., 38(4):243–254, August 2008.
