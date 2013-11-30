@@ -9,7 +9,7 @@ class String
 	end
 
 	def to_bencode
-		# TODO
+		self.length.to_s + ":" + self.to_s
 	end
 
 	def self.parse_bencode()
@@ -25,7 +25,7 @@ class Integer
 	end
 
 	def to_bencode
-		# TODO
+		"i" + self.to_s + "e"
 	end
 
 	def self.parse_bencode()
@@ -41,7 +41,9 @@ class Array
 	end
 
 	def to_bencode
-		# TODO
+		"l" + self.map { |elm|
+			elm.to_bencode
+		}.join + "e"
 	end
 
 	def self.parse_bencode()
@@ -57,7 +59,10 @@ class Hash
 	end
 
 	def to_bencode
-		# TODO
+		# keys need to be "compared using a binary comparison"
+		"d" + self.keys.sort { |k|
+			k.to_bencode + self[k].to_bencode
+		}.join + "e"
 	end
 
 	def self.parse_bencode()
