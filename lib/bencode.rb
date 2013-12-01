@@ -1,3 +1,7 @@
+#Inspired by William Morgan's bencoding.rb 
+#Here: https://github.com/reddavis/rubytorrent/blob/master/rubytorrent/bencoding.rb
+
+
 #Need to handle Strings, Integers, Lists (Arrays), Dictionaries (Hashes)
 #so we will just extend these Ruby Classes with our own methods
 
