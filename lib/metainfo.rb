@@ -4,10 +4,6 @@
 module Torrent
 
 class Metainfo
-	def initialize(fh)
-		@fh = fh
-	end
-
 	@info = Hash.new
 	@announce = String.new
 	@announceList = Array.new
@@ -16,13 +12,13 @@ class Metainfo
 	@createdBy = String.new
 	@encoding = String.new
 
-	def parse #once we parse, @fh is at EOF, should reset it?
+	def initialize(fh) #once we parse, @fh is at EOF, should reset it?
 		# TODO should we combine this step with new()?
-		infoHash = Torrent::Bencode.decode(@fh)
+		infoHash = Torrent::Bencode.decode(fh)
 		@info = infoHash["info"]
 		@announce = infoHash["announce"]
 		@announceList = infoHash["announce-list"]
-		@creationDate = infoHash["creation date"].to_i
+		@creationDate = infoHash["creation date"]
 		@comment = infoHash["comment"]
 		@createdBy = infoHash["created by"]
 		@encoding = infoHash["encoding"]
