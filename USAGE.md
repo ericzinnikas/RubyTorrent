@@ -4,7 +4,7 @@
 Reading in a torrent file, parsing it, sending an initial request to the tracker and parsing the response.
 
 
-```
+```ruby
 require './lib/bencode.rb'
 require './lib/metainfo.rb'
 require './lib/tracker.rb'
