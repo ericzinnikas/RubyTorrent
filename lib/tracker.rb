@@ -56,7 +56,7 @@ class Tracker
 
 		get = "?info_hash=#{info_hash}&peer_id=#{peer_id}&port=#{port.to_s}&uploaded=#{uploaded}&downloaded=#{downloaded}&left=#{left}&compact=#{compact}&event=#{event}&numwant=#{numwant}&trackerid=#{trackerid}"
 
-		uri = URI( @annnounce + get )
+		uri = URI( @announce + get )
 		req = Net::HTTP::Get.new(uri)
 		res = Net::HTTP.start(uri.hostname, uri.port) { |http|
 			http.request(req)

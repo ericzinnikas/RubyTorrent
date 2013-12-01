@@ -22,7 +22,6 @@ class Metainfo
 		@comment = infoHash["comment"]
 		@createdBy = infoHash["created by"]
 		@encoding = infoHash["encoding"]
-		return true
 	end
 
 	def getName
