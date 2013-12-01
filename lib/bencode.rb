@@ -107,8 +107,10 @@ class Hash
 	end
 
 	def to_bencode
-		# keys need to be "compared using a binary comparison"
-		"d" + self.keys.sort { |k|
+		# keys need to be "compared using a binary comparison, as strings.."
+		"d" + self.keys.sort { |x, y|
+			x.to_s <=> y.to_s #ensure string comparison
+		}.map { |k|
 			k.to_bencode + self[k].to_bencode
 		}.join + "e"
 	end

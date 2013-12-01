@@ -21,7 +21,7 @@ class Metainfo
 		@info = infoHash["info"]
 		@announce = infoHash["announce"]
 		@announceList = infoHash["announce-list"]
-		@creationDate = infoHash["creation date"]
+		@creationDate = infoHash["creation date"].to_i
 		@comment = infoHash["comment"]
 		@createdBy = infoHash["created by"]
 		@encoding = infoHash["encoding"]

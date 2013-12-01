@@ -1,7 +1,9 @@
 #Handle communication w/tracker (i.e. HTTP(S) GET requests)
 #Need to implement proper urlencoding (See: https://wiki.theory.org/BitTorrentSpecification#Tracker_HTTP.2FHTTPS_Protocol )
 
+#ask Bobby / Lex if we can use these libs
 require 'digest/sha1'
+require 'net/http'
 
 module Torrent
 
@@ -22,18 +24,19 @@ class Tracker
 	end
 
 	def initialize(metainfo)
+		#save the metainfo object in here, so we don't need to provide it again
 		@announce = metainfo.getAnnounce
 		@uploaded = 0
 		@downloaded = 0
 		@trackerid =  ""
-		@left = metainfo.getInfo["length"]
+		@left = metainfo.getInfo["length"].to_i
 		#we need to first determine if this is "single file" or
 		#"multiple file" mode, because there are differences
 	end
 
 	def sendRequest(type, metainfo)
 		# ask Lex/Bobby if we can use 3rd party sha1 lib (also url get request)
-		info_hash = Digest::SHA1.digest( Tracker.urlencode( metainfo.getInfo.to_bencode ) ) #sha1 hash
+		info_hash = Tracker.urlencode( Digest::SHA1.digest( metainfo.getInfo.to_bencode ) ) #sha1 hash
 
 		peer_id = "-RR0001-"
 		# we need 12 random digits
@@ -49,6 +52,13 @@ class Tracker
 		trackerid = @trackerid #if we get a trackerid, put it here, otherwise nil or don't send
 
 		get = "?info_hash=#{info_hash}&peer_id=#{peer_id}&port=#{port.to_s}&uploaded=#{uploaded}&downloaded=#{downloaded}&left=#{left}&compact=#{compact}&event=#{event}&numwant=#{numwant}&trackerid=#{trackerid}"
+
+		uri = URI( metainfo.getAnnounce + get )
+		req = Net::HTTP::Get.new(uri)
+		res = Net::HTTP.start(uri.hostname, uri.port) { |http|
+			http.request(req)
+		}
+		puts res.body
 	end
 end
 
