@@ -58,7 +58,14 @@ class Tracker
 		res = Net::HTTP.start(uri.hostname, uri.port) { |http|
 			http.request(req)
 		}
-		puts res.body
+
+		#since we need to pass a file handle...just create a temp file
+		fh = File.new("temp", "w+")
+		fh.write( res.body )
+		fh.pos = 0
+		#fh.flush #unsure if needed
+
+		Torrent::Bencode.decode(fh) #return tracker response as hash
 	end
 end
 

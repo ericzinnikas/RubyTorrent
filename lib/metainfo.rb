@@ -17,6 +17,7 @@ class Metainfo
 	@encoding = String.new
 
 	def parse #once we parse, @fh is at EOF, should reset it?
+		# TODO should we combine this step with new()?
 		infoHash = Torrent::Bencode.decode(@fh)
 		@info = infoHash["info"]
 		@announce = infoHash["announce"]

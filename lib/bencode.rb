@@ -27,7 +27,7 @@ class String
 	def self.is_bencoded?(fh) # are we looking at a string, etc. ?
 		ch = fh.getc #just need first char of input
 		fh.ungetc ch #put it back
-		("1" .. "9").include? ch
+		("0" .. "9").include? ch
 	end
 
 	def to_bencode
