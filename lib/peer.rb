@@ -15,7 +15,7 @@ module Torrent
 			reserved = "00000000"
 			
 			socket = TCPSocket.new(ip, port)
-			socket.write(pstrlen + pstr + reserved + info_hash + local_peer_id)
+			socket.write(pstrlen + pstr + reserved + @info_hash + @local_peer_id)
 			while line = socket.gets
 			  puts line
 			end
