@@ -9,6 +9,12 @@ module Torrent
 
 class Tracker
 	@mi = nil
+	@interval = nil
+	@minInterval = nil
+	@trackerId = String.new
+	@complete = nil
+	@incomplete = nil
+	@peers = String.new
 
 	# worry about UTF-8 vs BINARY (ASCII-8BIT) encodings?
 	def self.urlencode(string)
@@ -68,7 +74,14 @@ class Tracker
 		fh.pos = 0
 		#fh.flush #unsure if needed
 
-		Torrent::Bencode.decode(fh) #return tracker response as hash
+		response = Torrent::Bencode.decode(fh) #return tracker response as hash
+		@interval = response["interval"]
+		@minInterval = response["min interval"]
+		@trackerId = response["tracker id"]
+		@complete = response["complete"]
+		@incomplete = response["incomplete"]
+		@peers = response["peers"].split(/(.{4})(.{2})/)
+		return true
 	end
 end
 
