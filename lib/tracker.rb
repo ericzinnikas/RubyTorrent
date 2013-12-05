@@ -4,6 +4,7 @@
 #ask Bobby / Lex if we can use these libs
 require 'digest/sha1'
 require 'net/http'
+require 'ipaddr'
 
 module Torrent
 
@@ -45,11 +46,11 @@ class Tracker
 
 	def sendRequest(type)
 		# ask Lex/Bobby if we can use 3rd party sha1 lib (also url get request)
-		info_hash = Tracker.urlencode( Digest::SHA1.digest( @mi.getInfo.to_bencode ) ) #sha1 hash
+		@info_hash = Tracker.urlencode( Digest::SHA1.digest( @mi.getInfo.to_bencode ) ) #sha1 hash
 
-		peer_id = "-RR0001-"
+		@peer_id = "-RR0001-"
 		# we need 12 random digits
-		12.times { peer_id += rand(10).to_s }
+		12.times { @peer_id += rand(10).to_s }
 
 		port = 6889 #arbitrary decision
 		uploaded = @uploaded
@@ -60,7 +61,7 @@ class Tracker
 		numwant = 50 #arbitrary
 		trackerid = @trackerid #if we get a trackerid, put it here, otherwise nil or don't send
 
-		get = "?info_hash=#{info_hash}&peer_id=#{peer_id}&port=#{port.to_s}&uploaded=#{uploaded}&downloaded=#{downloaded}&left=#{left}&compact=#{compact}&event=#{event}&numwant=#{numwant}&trackerid=#{trackerid}"
+		get = "?info_hash=#{@info_hash}&peer_id=#{@peer_id}&port=#{port.to_s}&uploaded=#{uploaded}&downloaded=#{downloaded}&left=#{left}&compact=#{compact}&event=#{event}&numwant=#{numwant}&trackerid=#{trackerid}"
 
 		uri = URI( @announce + get )
 		req = Net::HTTP::Get.new(uri)
@@ -80,8 +81,34 @@ class Tracker
 		@trackerId = response["tracker id"]
 		@complete = response["complete"]
 		@incomplete = response["incomplete"]
-		@peers = response["peers"].split(/(.{4})(.{2})/)
+		@peers = response["peers"]
+
+		#parse peers into something usable
+		@peerSize = @peers.bytesize / 6
+		@peersNew = Array.new
+		@peerSize.times { |n|
+			ipOff = n*6
+			portOff = n*6 + 4
+			port = @peers.byteslice( portOff, 2 ).bytes
+			intPort = (port[0] << 8) | port[1]
+			@peersNew << [ IPAddr.new(@peers.byteslice( ipOff, 4 ).unpack("!L")[0], Socket::AF_INET).to_s, intPort ]
+		}
+
+		@peers = @peersNew
+
 		return true
+	end
+
+	def getPeers
+		@peers
+	end
+
+	def getInfoHash
+		@info_hash
+	end
+
+	def getPeerId
+		@peer_id
 	end
 end
 
