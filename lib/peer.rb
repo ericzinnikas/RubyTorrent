@@ -20,7 +20,7 @@ class Peer
     pstr = "BitTorrent protocol"
     reserved = "00000000"
     
-    socket = TCPSocket.new(peers[peer][0], peers[peer][1])
+    socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
     socket.write(pstrlen + pstr + reserved + @info_hash + @local_peer_id)
     while line = socket.gets
       puts line

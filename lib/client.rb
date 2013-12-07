@@ -18,7 +18,7 @@ class Client
     metainfo = Metainfo.new(@torrent_file)
     tracker = Tracker.new(metainfo)
     tracker.sendRequest("started")
-    peer = Peers.new(tracker)
+    peer = Peer.new(tracker)
     peer.handshake(0)
   end
 end
