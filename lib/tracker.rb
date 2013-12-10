@@ -104,7 +104,7 @@ class Tracker
 	end
 
 	def getInfoHash
-		@info_hash
+		Tracker.urldecode( @info_hash )
 	end
 
 	def getPeerId
