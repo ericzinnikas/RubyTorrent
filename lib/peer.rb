@@ -16,15 +16,18 @@ class Peer
   
   # 'peer' argument is the index of the peer in the peers array.
   def handshake(peer)
-    pstrlen = "19"
-    pstr = "BitTorrent protocol"
-    reserved = "00000000"
+    raw_data = [19, "BitTorrent protocol"] + Array.new(8, 0) << @info_hash << @local_peer_id
+    formatted_data = raw_data.pack("CA19L8A20A20")
     
     socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
-    socket.write(pstrlen + pstr + reserved + @info_hash + @local_peer_id)
-    while line = socket.gets
-      puts line
-    end
+    socket.write(formatted_data)
+    
+    sleep(3) # sleep prior to read
+    puts socket.read(5) # testing to see if 'gets' isn't receiving because it's waiting for newline character
+    
+    #while line = socket.gets
+    #  puts line
+    #end
     socket.close
   end
 end
