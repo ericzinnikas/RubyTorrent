@@ -91,7 +91,7 @@ class Tracker
 			portOff = n*6 + 4
 			port = @peers.byteslice( portOff, 2 ).bytes
 			intPort = (port[0] << 8) | port[1]
-			@peersNew << [ IPAddr.new(@peers.byteslice( ipOff, 4 ).unpack("!L")[0], Socket::AF_INET).to_s, intPort ]
+			@peersNew << [ IPAddr.new(@peers.byteslice( ipOff, 4 ).reverse.unpack("!L")[0], Socket::AF_INET).to_s, intPort ]
 		}
 
 		@peers = @peersNew
