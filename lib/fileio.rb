@@ -9,8 +9,7 @@ class FileIO
   @pieceLength = nil
   
   # accepts the info hash from metainfo
-  def initialize(info)
-    @info_dictionary = info
+  def initialize(info) @info_dictionary = info
     @files = Array.new
     @pieceLength = info["piece length"]
 
@@ -53,13 +52,13 @@ class FileIO
     # NEEDS TESTING
 
       @files[0][0].seek( n, IO::SEEK_SET )
-      bytes = @files[0][0].read( 20 )
+      bytes = @files[0][0].read( @pieceLength )
       if bytes.nil?
         @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
         next
       end
       pieceHash = Digest::SHA1.digest( bytes )
-      compHash = info["pieces"].byteslice( n / @pieceLength, 20 )
+      compHash = info["pieces"].byteslice( (n / @pieceLength) * 20, 20 )
 
       if pieceHash == compHash
         @bitfield.set_bit( n / @pieceLength )
@@ -69,7 +68,8 @@ class FileIO
       @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
     }
 
-    puts "Loaded #{countLoaded / (info["pieces"].length / 20)}% complete file."
+    puts "Loaded #{(countLoaded*100 / ( numBytes / @pieceLength )*100) / 100}% complete file."
+    puts @bitfield.to_binary_string
 
   end
 
