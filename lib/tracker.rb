@@ -79,8 +79,9 @@ class Tracker
 		fh.write( res.body )
 		fh.pos = 0
 		#fh.flush #unsure if needed
-
 		response = Torrent::Bencode.decode(fh) #return tracker response as hash
+    File.delete("temp")
+    
 		@interval = response["interval"]
 		@minInterval = response["min interval"]
 		@trackerId = response["tracker id"]
