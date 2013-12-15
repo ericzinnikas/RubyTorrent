@@ -33,7 +33,7 @@ class Peer
     # ensure client is serving received info hash
     if verifyHandshake(response)
       # run this upon handshake verification (only 1st time)
-      @bitfield = Bitfield.new(@length * 8, 0)
+      @bitfield = Bitfield.new(@length * 8 )
       # TO DO: Initialize bitfield above with length from torrent file, as 
       # otherwise there will be non-used trailing bits
       # ^ clarify this?
