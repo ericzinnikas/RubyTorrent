@@ -28,7 +28,7 @@ class Peer
     socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
     socket.write(raw_data.pack("cA19c8A20A20"))
 
-    pstrlen = socket.read(1).to_i
+    pstrlen = socket.read(1).unpack("c")[0]
     response = socket.read( 48 + pstrlen ) # same as below, but better
     puts "Got handshake"
     #response = socket.read(68)
@@ -42,30 +42,26 @@ class Peer
   end
   
   def verifyHandshake(handshake)
-    handshake.unpack("cA19c8A20A20")[10] == @info_hash
+    # to unpack complete response with pstrlen prefix use "cA19c8A20A20"
+    handshake.unpack("A19c8A20A20")[10] == @info_hash
   end
 
   # pass socket, after handshake is complete
   # this will handle message parsing and hand off as needed
   def parseMessages( socket )
 #this is broken
-    len = socket.read( 4 )
-    puts ">#{len.to_i}<"
-    if len == [0, 0, 0, 0]
-      #keep alive message....do nothing?
-      puts "Got keep-alive message"
-      parseMessages( socket )
-      return
-    end
+    len = socket.read( 4 ).unpack("L")[0]
+    puts ">#{len}<"
 
-    if len.to_i == 0
+    if len == 0
+    #keep alive message....do nothing?
       puts "got keep-alive message (wrong)"
       parseMessages( socket )
       return
     end
 
-    id = socket.read( 1 ).to_i
-    data = socket.read( len.to_i - 1 )
+    id = socket.read( 1 ).unpack("c")[0]
+    data = socket.read( len - 1 ) # not all messages have data to read, could be an issue?
 
     case id
     when 0
