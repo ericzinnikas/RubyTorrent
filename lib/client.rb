@@ -19,12 +19,12 @@ class Client
     tracker = Tracker.new(metainfo)
     tracker.sendRequest("started")
     peer = Peer.new(tracker)
-    peer.handshake(0)
+    peer.handshake(ARGV[1].to_i)
   end
 end
 
-unless ARGV.length == 1
-  abort("Invalid number of arguments. Usage: ruby client.rb [file]")
+unless ARGV.length == 2
+  abort("Invalid number of arguments. Usage: ruby client.rb [file] [peer]")
 end
 
 client = Client.new(ARGV[0])
