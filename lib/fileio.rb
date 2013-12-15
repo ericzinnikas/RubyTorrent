@@ -9,7 +9,8 @@ class FileIO
   @pieceLength = nil
   
   # accepts the info hash from metainfo
-  def initialize(info) @info_dictionary = info
+  def initialize(info) 
+    @info_dictionary = info
     @files = Array.new
     @pieceLength = info["piece length"]
 
@@ -26,20 +27,28 @@ class FileIO
         numBytes += file["length"]
         filename = file["path"].last
         
-        build_dir = String.new # for making directory trees
+        build_dir = info["name"] + File::SEPARATOR # for making directory trees
         file["path"].rotate(-1).drop(1).each { |dir| # don't use filename (last element)
-          build_dir += (dir + "/")
+          build_dir += (dir + File::SEPARATOR) # use constant separator for portability
           unless Dir.exists?(build_dir)
             Dir.mkdir(build_dir)
           end
         }
         
         @files << [File.open(build_dir + filename, File::RDWR | File::CREAT), file["length"]]
+        if @files.last[0].size < @files.last[1]
+          @files.last[0].seek(@files.last[0].size, IO::SEEK_SET)
+          @files.last[0].write("\0" * (@files.last[1] - @files.last[0].size))
+        end
       }
     else
       # single file mode
       numBytes = info["length"] 
       @files << [File.open(info["name"], File::RDWR | File::CREAT), info["length"]]
+      if @files.last[0].size < @files.last[1]
+        @files.last[0].seek(@files.last[0].size, IO::SEEK_SET)
+        @files.last[0].write("\0" * (@files.last[1] - @files.last[0].size))
+      end
     end
     
     # TO DO: Check which pieces are valid per the included hashes, set bits in bitfield
@@ -69,43 +78,83 @@ class FileIO
         @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
       }
     else
-      # Still working on this part
-      # TODO: we need to read each file consecutively
-      # is there a way we can chain file handles/opens
-      # in ruby or something?
-      #
       # Maybe read all the files into a string...? Would this kill
       # Ruby if the files were large though?
-      lastPiece = nil
+      #
+      # This would probably work, but per @177 on Piazza we would lose points
+      
+      # NEEDS TESTING
+      countLoaded = 0
+      lastIndex = @files.length - 1
       currentSeek = 0
-      @files.each { |file, length|
-        while (currentSeek + @pieceLength) <= length
-          file.seek( currentSeek, IO::SEEK_GET )
-          bytes = file.read( @pieceLength )
-          if bytes.length != @pieceLength
-            lastPiece = bytes
-          else
-            lastPiece = nil
+      pieceOffset = 0
+      @files.each_with_index { |file, index|
+        pieces = file[1] / @pieceLength
+        partialPieces = (file[1] % @pieceLength) != 0
+        puts "num pieces: #{pieces}, partialPieces: #{partialPieces}"
+        # iterate over all complete pieces in file
+        pieces.times { |pieceIndex|
+          # in case partial piece in beginning & end but file[1] % @pieceLength = 0
+          if (currentSeek + @pieceLength > file[1])
+            partialPieces = true
+            break
+          end
+          
+          file[0].seek( currentSeek, IO::SEEK_SET )
+          bytes = file[0].read( @pieceLength )
+        
+          pieceHash = Digest::SHA1.digest( bytes )
+          compHash = info["pieces"].byteslice( (pieceIndex + pieceOffset) * 20, 20 )
+          
+          if pieceHash == compHash
+            @bitfield.set_bit( pieceIndex + pieceOffset )
+            countLoaded += 1
+            puts "Bit #{pieceIndex + pieceOffset} set"
+          end
+          
+          currentSeek += @pieceLength
+        }
+        
+        # handle partial piece at end of file
+        if partialPieces && index != (@files.length - 1)
+          # read to end of first file
+          file[0].seek( currentSeek, IO::SEEK_SET )
+          bytes = file[0].read( @pieceLength ) # okay to read more bytes than exist? will there be empty bytes? test this
+          
+          # reading beginning of next file
+          partialByteLength = @pieceLength - bytes.length
+          @files[index + 1][0].seek( 0, IO::SEEK_SET )
+          bytes += @files[index + 1][0].read( partialByteLength )
+          
+          
+          pieceHash = Digest::SHA1.digest( bytes )
+          compHash = info["pieces"].byteslice( (pieces + pieceOffset) * 20, 20 )
+          
+          if pieceHash == compHash
+            @bitfield.set_bit( pieces + pieceOffset )
+            countLoaded += 1
           end
 
-          #pieceHash = Digest::SHA1.digest( bytes )
-          #compHash = info["pieces"].byteslice( ( 
-
-          currentSeek += @pieceLength
-        end 
+          # start currentSeek to exclude the preceding partial bytes in the next file
+          currentSeek = partialByteLength
+        else
+          # if no partial file, start currentSeek at the beginning for the next file
+          currentSeek = 0
+        end
+        
+        # maintain offset of pieces from previous file for next file
+        pieceOffset += pieces
       }
+
+      puts "Loaded #{(countLoaded*100 / ( numBytes / @pieceLength )*100) / 100}% complete file."
+      puts @bitfield.to_binary_string
     end
-
-    puts "Loaded #{(countLoaded*100 / ( numBytes / @pieceLength )*100) / 100}% complete file."
-    puts @bitfield.to_binary_string
-
   end
 
   def getBitfield
     @bitfield
   end
   
-    
 end
 
 end
