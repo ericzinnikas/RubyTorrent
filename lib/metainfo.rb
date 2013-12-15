@@ -23,7 +23,7 @@ class Metainfo
 		@createdBy = infoHash["created by"]
 		@encoding = infoHash["encoding"]
 
-    if ! @info["files"].nil?
+    if @info["files"].nil?
       @single = true
     else
       @single = false

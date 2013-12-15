@@ -7,7 +7,7 @@ class Bitfield
   # length is number of bits (i.e. pieces)
   def initialize(length)
     @num_of_bits = length
-    @bit_array = Array.new((length + 7) / 8, 0)
+    @bit_array = Array.new((length + 7) / 8, 0) # /7 to round up?
   end
 
   # 0-based index

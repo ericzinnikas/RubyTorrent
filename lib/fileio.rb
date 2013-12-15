@@ -51,7 +51,12 @@ class FileIO
     # NEEDS TESTING
 
       @files[0][0].seek( n, IO::SEEK_SET )
-      pieceHash = Digest::SHA1.digest( @files[0][0].read( 20 ) )
+      bytes = @files[0][0].read( 20 )
+      if bytes.nil?
+        @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
+        next
+      end
+      pieceHash = Digest::SHA1.digest( bytes )
       compHash = info["pieces"].byteslice( n / @pieceLength, 20 )
 
       if pieceHash == compHash
