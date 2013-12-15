@@ -73,6 +73,9 @@ class FileIO
       # TODO: we need to read each file consecutively
       # is there a way we can chain file handles/opens
       # in ruby or something?
+      #
+      # Maybe read all the files into a string...? Would this kill
+      # Ruby if the files were large though?
       lastPiece = nil
       currentSeek = 0
       @files.each { |file, length|
