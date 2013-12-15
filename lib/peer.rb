@@ -8,6 +8,8 @@ class Peer
   @local_peer_id = nil
   @info_hash = nil
   
+  @bitfield = nil # here for now, but there may be a better place to put this variable? 
+  
   # Formatted messages for the protocol
   @keep_alive = Array.new(4, 0).pack("c4")
   @choke = [0, 0, 0, 1, 0].pack("c5")
@@ -84,13 +86,15 @@ class Peer
       puts "Got not interested message"
     when 4
       puts "Got have message"
-      # we know that data describes zero-based index of piece that was just downloaded & verified
+      @bitfield.set_bit(data.unpack("N")[0])
+      puts @bitfield.to_binary_string
     when 5
       puts "Got bitfield message"
-      # read wiki entry on bitfield
-      bitfield = Bitfield.new((len - 1) * 8)
-      bitfield.from_binary_data(data)
-      puts bitfield.to_binary_string
+      # note, many trackers will send incomplete bitfield, then supplement
+      # remaining gaps with "have" messages (called lazy bitfield)
+      @bitfield = Bitfield.new((len - 1) * 8)
+      @bitfield.from_binary_data(data)
+      puts @bitfield.to_binary_string
     when 6
       puts "Got request message"
     when 7

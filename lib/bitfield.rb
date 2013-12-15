@@ -13,22 +13,22 @@ class Bitfield
   def set_bit(index)
     offset = index / 8
     shift_num = 7 - (index % 8)
-    @bit_array[index] |= (1 << shift_num)
+    @bit_array[offset] |= (1 << shift_num)
   end
   
   # 0-based index. returns true if set, otherwise false.
   def check_bit(index)
     offset = index / 8
     shift_num = 7 - (index % 8)
-    (@bit_array[index] & (1 << shift_num)) != 0
+    (@bit_array[offset] & (1 << shift_num)) != 0
   end
   
   # 0-based index
   def clear_bit(index)
     offset = index / 8
     shift_num = 7 - (index % 8)
-    if (@bit_array[index] & (1 << shift_num)) != 0
-      @bit_array[index] ^= (1 << shift_num)
+    if (@bit_array[offset] & (1 << shift_num)) != 0
+      @bit_array[offset] ^= (1 << shift_num)
     end
   end
 
