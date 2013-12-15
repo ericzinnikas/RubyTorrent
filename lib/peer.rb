@@ -8,7 +8,8 @@ class Peer
   @local_peer_id = nil
   @info_hash = nil
   
-  @bitfield = nil # here for now, but there may be a better place to put this variable? 
+  # peer's bitfield (what they have available)
+  @bitfield = nil # there may be a better place to put this variable? 
   
   # Formatted messages for the protocol
   @keep_alive = Array.new(4, 0).pack("c4")
@@ -93,6 +94,8 @@ class Peer
       # note, many trackers will send incomplete bitfield, then supplement
       # remaining gaps with "have" messages (called lazy bitfield)
       @bitfield = Bitfield.new((len - 1) * 8)
+       # TO DO: Initialize bitfield above with length from torrent file, as 
+       # otherwise there will be non-used trailing bits
       @bitfield.from_binary_data(data)
       puts @bitfield.to_binary_string
     when 6

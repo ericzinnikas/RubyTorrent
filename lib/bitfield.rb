@@ -2,10 +2,12 @@ module Torrent
 
 class Bitfield
   @bit_array = nil
-
+  @num_of_bits = nil # needed because bit_array is in multiples of 8
+  
   # length is number of bits (i.e. pieces)
   def initialize(length)
-    @bit_array = Array.new(length / 8, 0)
+    @num_of_bits = length
+    @bit_array = Array.new((length + 7) / 8, 0)
   end
 
   # 0-based index
@@ -49,7 +51,7 @@ class Bitfield
       prefix_bits = "0" * (8 - suffix_bits.length) # ensure each byte is 8 chars
       out << (prefix_bits + suffix_bits)
     }
-    out
+    out.byteslice(0, @num_of_bits)
   end
   
 end

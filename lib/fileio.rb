@@ -1,14 +1,15 @@
-# Handle the file IO logic for writing files and starting from partial files.
+# Handle the file IO logic for writing and reading files, as well as starting from partial files.
 
 module Torrent
 
 class FileIO
-  @info_hash = nil
+  @info_dictionary = nil
   @files = nil # [[File descriptor, length], ...] (may be only a single file)
+  @bitfield = nil
   
   # accepts the info hash from metainfo
   def initialize(info)
-    @info_hash = info
+    @info_dictionary = info
     @files = Array.new
     
     if info["files"] != nil
@@ -33,10 +34,15 @@ class FileIO
       }
     else
       # single file mode
+      
       @files << [File.open(info["name"], File::RDWR | File::CREAT), info["length"]]
     end
+    
+    @bitfield = Bitfield.new((info["pieces"].length / 20))
+    # TO DO: Check which pieces are valid per the included hashes, set bits in bitfield
   end
   
+    
 end
 
 end
