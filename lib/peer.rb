@@ -27,8 +27,10 @@ class Peer
     
     socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
     socket.write(raw_data.pack("cA19c8A20A20"))
-    puts socket.read
+    response = socket.read(68)
     socket.close
+    
+    response
   end
   
 end
