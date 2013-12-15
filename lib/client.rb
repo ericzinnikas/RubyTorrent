@@ -19,7 +19,7 @@ class Client
     tracker = Tracker.new(metainfo)
     tracker.sendRequest("started")
     peer = Peer.new(tracker)
-    peer.handshake(ARGV[1].to_i)
+    peer.connect(ARGV[1].to_i)
   end
 end
 

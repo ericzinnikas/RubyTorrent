@@ -21,39 +21,45 @@ class Peer
     @info_hash = tracker.getInfoHash
   end
   
-  # 'peer' argument is the index of the peer in the peers array.
-  def handshake(peer)
-    raw_data = [19, "BitTorrent protocol"] + Array.new(8, 0) << @info_hash << @local_peer_id
-    
+  def connect(peer)
     socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
-    socket.write(raw_data.pack("cA19c8A20A20"))
-
-    pstrlen = socket.read(1).unpack("c")[0]
-    response = socket.read( 48 + pstrlen ) # same as below, but better
-    puts "Got handshake"
+    
+    response = handshake(socket)
     
     # ensure client is serving received info hash
     if verifyHandshake(response)
-      parseMessages( socket )
-      #for debugging this won't exit..
+      loop {
+        parseMessages( socket )
+        #for debugging this won't exit..
+      }
     else
       puts "Invalid infohash received in handshake"
     end
     
-    socket.close
+    socket.close 
+  end
+  
+  # 'peer' argument is the index of the peer in the peers array.
+  def handshake(socket)
+    raw_data = [19, "BitTorrent protocol"] + Array.new(8, 0) << @info_hash << @local_peer_id
+    
+    socket.write(raw_data.pack("cA19c8A20A20"))
+
+    pstrlen = socket.read(1).unpack("c")[0]
+    response = socket.read( 48 + pstrlen )
+    puts "Got handshake"
     
     response
   end
   
   def verifyHandshake(handshake)
-    # to unpack complete response with pstrlen prefix use "cA19c8A20A20"
+    # to unpack complete response with pstrlen prefix use "cA19c8A20A20" and index [10]
     (handshake.unpack("A19c8A20A20")[9] == @info_hash)
   end
 
   # pass socket, after handshake is complete
   # this will handle message parsing and hand off as needed
   def parseMessages( socket )
-    #this is broken
     len = socket.read( 4 ).unpack("N")[0]
     puts ">#{len}<"
 
@@ -94,10 +100,6 @@ class Peer
     else
       puts "Unsupported Protocol Message #{id}"
     end
-
-    parseMessages( socket ) #keep looping...?
-    #or will this blow up our stack if we keep recursing down?
-    #maybe just use a normal loop
 
   end
   
