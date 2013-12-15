@@ -8,6 +8,7 @@ class Client
   def initialize(file) 
     require_relative "bencode"
     require_relative "bitfield"
+    require_relative "fileio"
     require_relative "metainfo"
     require_relative "peer"
     require_relative "tracker"
@@ -17,8 +18,12 @@ class Client
   
   def runClient
     metainfo = Metainfo.new(@torrent_file)
+    
+    fileio = FileIO.new(metainfo.getInfo)
+    
     tracker = Tracker.new(metainfo)
     tracker.sendRequest("started")
+    
     peer = Peer.new(tracker)
     peer.connect(ARGV[1].to_i)
   end

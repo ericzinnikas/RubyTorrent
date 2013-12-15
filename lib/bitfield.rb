@@ -1,7 +1,6 @@
 module Torrent	
 
 class Bitfield
-
   @bit_array = nil
 
   # length is number of bits (i.e. pieces)
