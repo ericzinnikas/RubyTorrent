@@ -29,7 +29,7 @@ class Peer
     socket.write(raw_data.pack("cA19c8A20A20"))
 
     pstrlen = socket.read(1).to_i
-    response = socket.read( 49 + pstrlen ) # same as below, but better
+    response = socket.read( 48 + pstrlen ) # same as below, but better
     puts "Got handshake"
     #response = socket.read(68)
 
