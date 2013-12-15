@@ -91,7 +91,7 @@ class FileIO
       @files.each_with_index { |file, index|
         pieces = file[1] / @pieceLength
         partialPieces = (file[1] % @pieceLength) != 0
-        puts "num pieces: #{pieces}, partialPieces: #{partialPieces}"
+        
         # iterate over all complete pieces in file
         pieces.times { |pieceIndex|
           # in case partial piece in beginning & end but file[1] % @pieceLength = 0
@@ -102,7 +102,7 @@ class FileIO
           
           file[0].seek( currentSeek, IO::SEEK_SET )
           bytes = file[0].read( @pieceLength )
-        
+          
           pieceHash = Digest::SHA1.digest( bytes )
           compHash = info["pieces"].byteslice( (pieceIndex + pieceOffset) * 20, 20 )
           
@@ -116,16 +116,17 @@ class FileIO
         }
         
         # handle partial piece at end of file
-        if partialPieces && index != (@files.length - 1)
+        if partialPieces
           # read to end of first file
           file[0].seek( currentSeek, IO::SEEK_SET )
           bytes = file[0].read( @pieceLength ) # okay to read more bytes than exist? will there be empty bytes? test this
-          
-          # reading beginning of next file
           partialByteLength = @pieceLength - bytes.length
-          @files[index + 1][0].seek( 0, IO::SEEK_SET )
-          bytes += @files[index + 1][0].read( partialByteLength )
           
+          if (index != @files.length - 1)
+            # reading beginning of next file
+            @files[index + 1][0].seek( 0, IO::SEEK_SET )
+            bytes += @files[index + 1][0].read( partialByteLength )
+          end
           
           pieceHash = Digest::SHA1.digest( bytes )
           compHash = info["pieces"].byteslice( (pieces + pieceOffset) * 20, 20 )
@@ -134,7 +135,7 @@ class FileIO
             @bitfield.set_bit( pieces + pieceOffset )
             countLoaded += 1
           end
-
+          
           # start currentSeek to exclude the preceding partial bytes in the next file
           currentSeek = partialByteLength
         else
