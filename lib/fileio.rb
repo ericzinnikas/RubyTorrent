@@ -48,6 +48,7 @@ class FileIO
     @bitfield = Bitfield.new( fieldSize )
 
     #this will only work for single files right now
+    countLoaded = 0
     (0..numBytes).step( @pieceLength ) { |n|
     # NEEDS TESTING
 
@@ -62,10 +63,13 @@ class FileIO
 
       if pieceHash == compHash
         @bitfield.set_bit( n / @pieceLength )
+        countLoaded += 1
       end
 
       @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
     }
+
+    puts "Loaded #{countLoaded / (info["pieces"].length / 20)}% complete file."
 
   end
 

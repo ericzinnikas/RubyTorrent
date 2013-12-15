@@ -101,7 +101,7 @@ class Peer
       # note, many trackers will send incomplete bitfield, then supplement
       # remaining gaps with "have" messages (called lazy bitfield)
       @bitfield.from_binary_data(data)
-      puts @bitfield.to_binary_string
+      #puts @bitfield.to_binary_string
     when 6
       puts "Got request message"
     when 7
