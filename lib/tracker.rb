@@ -80,6 +80,7 @@ class Tracker
 		fh.pos = 0
 		#fh.flush #unsure if needed
 		response = Torrent::Bencode.decode(fh) #return tracker response as hash
+    fh.close
     File.delete("temp")
     
 		@interval = response["interval"]

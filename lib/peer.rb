@@ -3,20 +3,15 @@
 module Torrent	
 
 class Peer
-  @peers = nil
+  # use 2^14 byte block size (16kb) for compatability with other clients
+  BLOCK_SIZE = 16384
   
+  @peers = nil
   @local_peer_id = nil
   @info_hash = nil
-  
-  # peer's bitfield (what they have available)
-  @bitfield = nil # there may be a better place to put this variable? 
-  
-  # Formatted messages for the protocol
-  @keep_alive = Array.new(4, 0).pack("c4")
-  @choke = [0, 0, 0, 1, 0].pack("c5")
-  @unchoke = [0, 0, 0, 1, 1].pack("c5")
-  @interested = [0, 0, 0, 1, 2].pack("c5")
-  @not_interested = [0, 0, 0, 1, 3].pack("c5")
+  # peer's bitfield
+  @bitfield = nil
+  @fileio = nil
   
   def initialize(tracker, fileio)
     @peers = tracker.getPeers
@@ -24,6 +19,7 @@ class Peer
     @info_hash = tracker.getInfoHash
     @length = tracker.askMI.getLength
     @bitfield = Bitfield.new(fileio.getBitfield.get_num_of_bits)
+    @fileio = fileio
   end
   
   def connect(peer)
@@ -95,7 +91,7 @@ class Peer
       #puts @bitfield.to_binary_string
     when 5
       puts "Got bitfield message"
-      # note, many trackers will send incomplete bitfield, then supplement
+      # note, many clients will send incomplete bitfield, then supplement
       # remaining gaps with "have" messages (called lazy bitfield)
       @bitfield.from_binary_data(data)
       #puts @bitfield.to_binary_string
@@ -112,6 +108,70 @@ class Peer
       puts "Unsupported Protocol Message #{id}"
     end
 
+  end
+  
+  def send_keepalive(socket)
+    socket.write([0].pack("N"))
+  end
+  
+  def send_choke(socket)
+    socket.write([1, 0].pack("Nc"))
+  end
+  
+  def send_unchoke(socket)
+    socket.write([1, 1].pack("Nc"))
+  end
+  
+  def send_interested(socket)
+    socket.write([1, 2].pack("Nc"))
+  end
+  
+  def send_notinterested(socket)
+    socket.write([1, 3].pack("Nc"))
+  end
+  
+  # piece_index is zero-based
+  def send_have(piece_index)
+    socket.write([5, 4, piece_index].pack("NcN"))
+  end
+  
+  def send_bitfield(socket)
+    bitfield_length = (@fileio.getBitfield.num_of_bits + 7) / 8
+    bitfield_data = @fileio.getBitfield.to_binary_data
+    socket.write([(1 + bitfield_length), 5].pack("Nc") + bitfield_data)
+  end
+  
+  def send_request(socket, piece_index, begin_offset)
+    socket.write([13, 6, piece_index, begin_offset, BLOCK_SIZE].pack("NcN3"))
+  end
+  
+  
+  def send_piece(socket, piece_index, begin_offset)
+    # might be a better way to cache piece/length offsets for multiple files
+    piece_offset = piece_index * @fileio.pieceLength
+    file_index = nil
+    filelength_offset = 0
+    @fileio.files.each_with_index { |file, index|
+      if filelength_offset + file[1] > piece_offset
+        file_index = index
+      else
+        filelength_offset += file[1]
+      end
+    }
+    
+    @fileio.files[file_index][0].seek(piece_offset - filelength_offset, IO::SEEK_SET)
+    block_bytes = @fileio.files[file_index][0].read(BLOCK_SIZE) # is it okay if it reads bytes from next piece?
+    
+    socket.write([9 + block_bytes.size, 7, piece_index, begin_offset].pack("NcN2") + block_bytes)
+  end
+  
+  def send_cancel(socket, piece_index, begin_offset)
+    socket.write([13, 8, piece_index, begin_offset, BLOCK_SIZE].pack("NcN3"))
+  end
+  
+  # only needed with DHT
+  def send_port(socket, listen_port)
+    
   end
   
 end
