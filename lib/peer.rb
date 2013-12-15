@@ -40,6 +40,10 @@ class Peer
     
     response
   end
+  
+  def verifyHandshake(handshake)
+    handshake.unpack("cA19c8A20A20")[10] == @info_hash
+  end
 
   # pass socket, after handshake is complete
   # this will handle message parsing and hand off as needed
