@@ -184,7 +184,7 @@ class Peer
   
   # only needed with DHT
   def send_port(socket, listen_port)
-    
+    socket.write([3, 9, listen_port].pack("Ncn"))
   end
   
 end
