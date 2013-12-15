@@ -7,6 +7,7 @@ class Bitfield
   # length is number of bits (i.e. pieces)
   def initialize(length)
     @num_of_bits = length
+    puts "Creating bitfield of #{(length + 7)/8} pieces."
     @bit_array = Array.new((length + 7) / 8, 0) # /7 to round up?
   end
 
@@ -17,10 +18,6 @@ class Bitfield
     @bit_array[offset] |= (1 << shift_num)
   end
 
-  def set_byte(index)
-    @bit_array[index] = 255
-  end
-  
   # 0-based index. returns true if set, otherwise false.
   def check_bit(index)
     offset = index / 8

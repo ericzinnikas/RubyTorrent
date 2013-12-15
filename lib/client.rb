@@ -24,7 +24,7 @@ class Client
     tracker = Tracker.new(metainfo)
     tracker.sendRequest("started")
     
-    peer = Peer.new(tracker)
+    peer = Peer.new(tracker, fileio)
     peer.connect(ARGV[1].to_i)
   end
 end

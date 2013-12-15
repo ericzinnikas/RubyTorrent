@@ -18,14 +18,16 @@ class Peer
   @interested = [0, 0, 0, 1, 2].pack("c5")
   @not_interested = [0, 0, 0, 1, 3].pack("c5")
   
-  def initialize(tracker)
+  def initialize(tracker, fileio)
     @peers = tracker.getPeers
     @local_peer_id = tracker.getPeerId
     @info_hash = tracker.getInfoHash
     @length = tracker.askMI.getLength
+    @bitfield = fileio.getBitfield
   end
   
   def connect(peer)
+    puts "Starting connection."
     socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
     
     response = handshake(socket)
@@ -33,10 +35,8 @@ class Peer
     # ensure client is serving received info hash
     if verifyHandshake(response)
       # run this upon handshake verification (only 1st time)
-      @bitfield = Bitfield.new(@length * 8 )
-      # TO DO: Initialize bitfield above with length from torrent file, as 
-      # otherwise there will be non-used trailing bits
-      # ^ clarify this?
+      #@bitfield = Bitfield.new(@length * 8 )
+      #bitfield initialized in new() 
       
       loop {
         parseMessages( socket )
@@ -54,6 +54,7 @@ class Peer
     raw_data = [19, "BitTorrent protocol"] + Array.new(8, 0) << @info_hash << @local_peer_id
     
     socket.write(raw_data.pack("cA19c8A20A20"))
+    puts "Sent handshake."
 
     pstrlen = socket.read(1).unpack("c")[0]
     response = socket.read( 48 + pstrlen )
@@ -71,7 +72,6 @@ class Peer
   # this will handle message parsing and hand off as needed
   def parseMessages( socket )
     len = socket.read( 4 ).unpack("N")[0]
-    puts ">#{len}<"
 
     if len == 0
     #keep alive message....do nothing?

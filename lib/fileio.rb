@@ -44,7 +44,8 @@ class FileIO
     end
     
     # TO DO: Check which pieces are valid per the included hashes, set bits in bitfield
-    @bitfield = Bitfield.new( numBytes * 8 )
+    fieldSize = info["pieces"].length / 20
+    @bitfield = Bitfield.new( fieldSize )
 
     #this will only work for single files right now
     (0..numBytes).step( @pieceLength ) { |n|
@@ -60,14 +61,16 @@ class FileIO
       compHash = info["pieces"].byteslice( n / @pieceLength, 20 )
 
       if pieceHash == compHash
-        (n..n + @pieceLength).each { |b|
-          @bitfield.set_byte( b )
-        }
+        @bitfield.set_bit( n / @pieceLength )
       end
 
       @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
     }
 
+  end
+
+  def getBitfield
+    @bitfield
   end
   
     
