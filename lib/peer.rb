@@ -31,10 +31,14 @@ class Peer
     pstrlen = socket.read(1).unpack("c")[0]
     response = socket.read( 48 + pstrlen ) # same as below, but better
     puts "Got handshake"
-    #response = socket.read(68)
-
-    #parseMessages( socket )
-    #for debugging this won't exit..
+    
+    # ensure client is serving received info hash
+    if verifyHandshake(response)
+      parseMessages( socket )
+      #for debugging this won't exit..
+    else
+      puts "Invalid infohash received in handshake"
+    end
     
     socket.close
     
@@ -43,14 +47,14 @@ class Peer
   
   def verifyHandshake(handshake)
     # to unpack complete response with pstrlen prefix use "cA19c8A20A20"
-    handshake.unpack("A19c8A20A20")[10] == @info_hash
+    (handshake.unpack("A19c8A20A20")[9] == @info_hash)
   end
 
   # pass socket, after handshake is complete
   # this will handle message parsing and hand off as needed
   def parseMessages( socket )
-#this is broken
-    len = socket.read( 4 ).unpack("L")[0]
+    #this is broken
+    len = socket.read( 4 ).unpack("N")[0]
     puts ">#{len}<"
 
     if len == 0
