@@ -97,7 +97,7 @@ class Array
 
 		while( (x = fh.getc) != "e")
 			fh.ungetc x
-			out[] = Torrent::Bencode.decode(fh)
+			out << Torrent::Bencode.decode(fh)
 		end
 		return out
 	end
