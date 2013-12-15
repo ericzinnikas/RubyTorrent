@@ -47,26 +47,51 @@ class FileIO
     @bitfield = Bitfield.new( fieldSize )
 
     #this will only work for single files right now
-    countLoaded = 0
-    (0..numBytes).step( @pieceLength ) { |n|
-    # NEEDS TESTING
+    if info["files"].nil?
+      countLoaded = 0
+      (0..numBytes).step( @pieceLength ) { |n|
+      # NEEDS TESTING
 
-      @files[0][0].seek( n, IO::SEEK_SET )
-      bytes = @files[0][0].read( @pieceLength )
-      if bytes.nil?
+        @files[0][0].seek( n, IO::SEEK_SET )
+        bytes = @files[0][0].read( @pieceLength )
+        if bytes.nil?
+          @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
+          next
+        end
+        pieceHash = Digest::SHA1.digest( bytes )
+        compHash = info["pieces"].byteslice( (n / @pieceLength) * 20, 20 )
+
+        if pieceHash == compHash
+          @bitfield.set_bit( n / @pieceLength )
+          countLoaded += 1
+        end
+
         @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
-        next
-      end
-      pieceHash = Digest::SHA1.digest( bytes )
-      compHash = info["pieces"].byteslice( (n / @pieceLength) * 20, 20 )
+      }
+    else
+      # Still working on this part
+      # TODO: we need to read each file consecutively
+      # is there a way we can chain file handles/opens
+      # in ruby or something?
+      lastPiece = nil
+      currentSeek = 0
+      @files.each { |file, length|
+        while (currentSeek + @pieceLength) <= length
+          file.seek( currentSeek, IO::SEEK_GET )
+          bytes = file.read( @pieceLength )
+          if bytes.length != @pieceLength
+            lastPiece = bytes
+          else
+            lastPiece = nil
+          end
 
-      if pieceHash == compHash
-        @bitfield.set_bit( n / @pieceLength )
-        countLoaded += 1
-      end
+          #pieceHash = Digest::SHA1.digest( bytes )
+          #compHash = info["pieces"].byteslice( ( 
 
-      @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
-    }
+          currentSeek += @pieceLength
+        end 
+      }
+    end
 
     puts "Loaded #{(countLoaded*100 / ( numBytes / @pieceLength )*100) / 100}% complete file."
     puts @bitfield.to_binary_string
