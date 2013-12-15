@@ -7,6 +7,7 @@ class Client
 
   def initialize(file) 
     require_relative "bencode"
+    require_relative "bitfield"
     require_relative "metainfo"
     require_relative "peer"
     require_relative "tracker"

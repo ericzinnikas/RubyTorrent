@@ -46,7 +46,9 @@ class Bitfield
   def to_binary_string
     out = String.new
     @bit_array.each { |byte|
-      out << byte.to_s(2)
+      suffix_bits = byte.to_s(2)
+      prefix_bits = "0" * (8 - suffix_bits.length) # ensure each byte is 8 chars
+      out << (prefix_bits + suffix_bits)
     }
     out
   end

@@ -88,6 +88,9 @@ class Peer
     when 5
       puts "Got bitfield message"
       # read wiki entry on bitfield
+      bitfield = Bitfield.new((len - 1) * 8)
+      bitfield.from_binary_data(data)
+      puts bitfield.to_binary_string
     when 6
       puts "Got request message"
     when 7
