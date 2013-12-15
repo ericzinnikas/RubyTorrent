@@ -16,6 +16,10 @@ class Bitfield
     shift_num = 7 - (index % 8)
     @bit_array[offset] |= (1 << shift_num)
   end
+
+  def set_byte(index)
+    @bit_array[index] = 255
+  end
   
   # 0-based index. returns true if set, otherwise false.
   def check_bit(index)

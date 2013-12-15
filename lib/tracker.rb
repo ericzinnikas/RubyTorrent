@@ -2,6 +2,7 @@
 #Need to implement proper urlencoding (See: https://wiki.theory.org/BitTorrentSpecification#Tracker_HTTP.2FHTTPS_Protocol )
 
 #ask Bobby / Lex if we can use these libs
+#move these includes to the client file?
 require 'digest/sha1'
 require 'net/http'
 require 'ipaddr'
