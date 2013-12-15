@@ -11,9 +11,9 @@ class Metainfo
 	@comment = String.new
 	@createdBy = String.new
 	@encoding = String.new
+  @single = nil
 
 	def initialize(fh) #once we parse, @fh is at EOF, should reset it?
-		# TODO should we combine this step with new()?
 		infoHash = Torrent::Bencode.decode(fh)
 		@info = infoHash["info"]
 		@announce = infoHash["announce"]
@@ -22,6 +22,13 @@ class Metainfo
 		@comment = infoHash["comment"]
 		@createdBy = infoHash["created by"]
 		@encoding = infoHash["encoding"]
+
+    if ! @info["files"].nil?
+      @single = true
+    else
+      @single = false
+    end
+
 	end
 
 	def getName
@@ -39,6 +46,22 @@ class Metainfo
 	def getAnnounceList
 		@announceList
 	end
+
+  def getLength
+    if @single
+      @info["length"]
+    else
+      numBytes = 0
+      @info["files"].each { |file|
+        numBytes += file["length"] 
+      }
+      numBytes
+    end
+  end
+
+  def isSingle?
+    @single
+  end
 
 end
 

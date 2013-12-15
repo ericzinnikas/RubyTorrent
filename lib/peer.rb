@@ -22,6 +22,7 @@ class Peer
     @peers = tracker.getPeers
     @local_peer_id = tracker.getPeerId
     @info_hash = tracker.getInfoHash
+    @length = tracker.askMI.getLength
   end
   
   def connect(peer)
@@ -31,6 +32,12 @@ class Peer
     
     # ensure client is serving received info hash
     if verifyHandshake(response)
+      # run this upon handshake verification (only 1st time)
+      @bitfield = Bitfield.new(@length * 8, 0)
+      # TO DO: Initialize bitfield above with length from torrent file, as 
+      # otherwise there will be non-used trailing bits
+      # ^ clarify this?
+      
       loop {
         parseMessages( socket )
         #for debugging this won't exit..
@@ -93,9 +100,6 @@ class Peer
       puts "Got bitfield message"
       # note, many trackers will send incomplete bitfield, then supplement
       # remaining gaps with "have" messages (called lazy bitfield)
-      @bitfield = Bitfield.new((len - 1) * 8)
-       # TO DO: Initialize bitfield above with length from torrent file, as 
-       # otherwise there will be non-used trailing bits
       @bitfield.from_binary_data(data)
       puts @bitfield.to_binary_string
     when 6

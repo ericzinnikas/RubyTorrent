@@ -44,6 +44,10 @@ class Tracker
 		#"multiple file" mode, because there are differences
 	end
 
+  def askMI
+    @mi #give access to the metainfo object
+  end
+
 	def sendRequest(type)
 		# ask Lex/Bobby if we can use 3rd party sha1 lib (also url get request)
 		@info_hash = Tracker.urlencode( Digest::SHA1.digest( @mi.getInfo.to_bencode ) ) #sha1 hash
