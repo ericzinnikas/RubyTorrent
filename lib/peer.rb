@@ -23,7 +23,7 @@ class Peer
     @local_peer_id = tracker.getPeerId
     @info_hash = tracker.getInfoHash
     @length = tracker.askMI.getLength
-    @bitfield = fileio.getBitfield
+    @bitfield = Bitfield.new(fileio.getBitfield.get_num_of_bits)
   end
   
   def connect(peer)
@@ -35,8 +35,6 @@ class Peer
     # ensure client is serving received info hash
     if verifyHandshake(response)
       # run this upon handshake verification (only 1st time)
-      #@bitfield = Bitfield.new(@length * 8 )
-      #bitfield initialized in new() 
       
       loop {
         parseMessages( socket )
@@ -54,7 +52,7 @@ class Peer
     raw_data = [19, "BitTorrent protocol"] + Array.new(8, 0) << @info_hash << @local_peer_id
     
     socket.write(raw_data.pack("cA19c8A20A20"))
-    puts "Sent handshake."
+    puts "Sent handshake"
 
     pstrlen = socket.read(1).unpack("c")[0]
     response = socket.read( 48 + pstrlen )
@@ -74,9 +72,8 @@ class Peer
     len = socket.read( 4 ).unpack("N")[0]
 
     if len == 0
-    #keep alive message....do nothing?
-      puts "got keep-alive message (wrong)"
-      parseMessages( socket )
+      # keep-alive message
+      puts "Got keep-alive message"
       return
     end
 
@@ -95,7 +92,7 @@ class Peer
     when 4
       puts "Got have message"
       @bitfield.set_bit(data.unpack("N")[0])
-      puts @bitfield.to_binary_string
+      #puts @bitfield.to_binary_string
     when 5
       puts "Got bitfield message"
       # note, many trackers will send incomplete bitfield, then supplement

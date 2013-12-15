@@ -122,7 +122,7 @@ class FileIO
           bytes = file[0].read( @pieceLength ) # okay to read more bytes than exist? will there be empty bytes? test this
           partialByteLength = @pieceLength - bytes.length
           
-          if (index != @files.length - 1)
+          if (index != @files.length - 1) # last partial piece CAN have truncated length
             # reading beginning of next file
             @files[index + 1][0].seek( 0, IO::SEEK_SET )
             bytes += @files[index + 1][0].read( partialByteLength )

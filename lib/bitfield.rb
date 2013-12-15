@@ -55,6 +55,10 @@ class Bitfield
     out.byteslice(0, @num_of_bits)
   end
   
+  def get_num_of_bits
+    @num_of_bits
+  end
+  
 end
   
 end
