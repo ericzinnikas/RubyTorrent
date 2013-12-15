@@ -46,6 +46,7 @@ class FileIO
     # TO DO: Check which pieces are valid per the included hashes, set bits in bitfield
     @bitfield = Bitfield.new( numBytes * 8, 0 )
 
+    #this will only work for single files right now
     (0..numBytes).step( @pieceLength ) { |n|
     # NEEDS TESTING
 
