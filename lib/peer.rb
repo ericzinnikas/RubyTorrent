@@ -9,17 +9,25 @@ class Peer
   @peers = nil
   @local_peer_id = nil
   @info_hash = nil
+  @fileio = nil
+  
+  @local_choking = nil
+  @local_interested = nil
+  
+  # no data will be sent until unchoking happens
+  @peer_choking = nil
+  @peer_interested = nil
+  
   # peer's bitfield
   @bitfield = nil
-  @fileio = nil
   
   def initialize(tracker, fileio)
     @peers = tracker.getPeers
     @local_peer_id = tracker.getPeerId
     @info_hash = tracker.getInfoHash
     @length = tracker.askMI.getLength
-    @bitfield = Bitfield.new(fileio.getBitfield.get_num_of_bits)
     @fileio = fileio
+    @bitfield = Bitfield.new(fileio.getBitfield.get_num_of_bits)
   end
   
   def connect(peer)
@@ -30,8 +38,6 @@ class Peer
     
     # ensure client is serving received info hash
     if verifyHandshake(response)
-      # run this upon handshake verification (only 1st time)
-      
       loop {
         parseMessages( socket )
         #for debugging this won't exit..
@@ -79,12 +85,16 @@ class Peer
     case id
     when 0
       puts "Got choke message"
+      @peer_choking = true
     when 1
       puts "Got unchoke message"
+      @peer_choking = false
     when 2
       puts "Got interested message"
+      @peer_interested = true
     when 3
       puts "Got not interested message"
+      @peer_interested = false
     when 4
       puts "Got have message"
       @bitfield.set_bit(data.unpack("N")[0])
@@ -115,18 +125,22 @@ class Peer
   end
   
   def send_choke(socket)
+    @local_choking = true
     socket.write([1, 0].pack("Nc"))
   end
   
   def send_unchoke(socket)
+    @local_choking = false
     socket.write([1, 1].pack("Nc"))
   end
   
   def send_interested(socket)
+    @local_interested = true
     socket.write([1, 2].pack("Nc"))
   end
   
   def send_notinterested(socket)
+    @local_interested = false
     socket.write([1, 3].pack("Nc"))
   end
   
@@ -144,7 +158,6 @@ class Peer
   def send_request(socket, piece_index, begin_offset)
     socket.write([13, 6, piece_index, begin_offset, BLOCK_SIZE].pack("NcN3"))
   end
-  
   
   def send_piece(socket, piece_index, begin_offset)
     # might be a better way to cache piece/length offsets for multiple files
