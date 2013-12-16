@@ -50,7 +50,7 @@ class Peer
   
   def connect(peer)
     # for clean exit if no peers exist (needs to be before @peers[peer][..])
-    if @peers.empty?
+    if @peers.nil? || @peers.empty? 
       puts "Aborting connection, no available peers"
       return
     end
