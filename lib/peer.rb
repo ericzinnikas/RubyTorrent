@@ -48,13 +48,13 @@ class Peer
   end
   
   def connect(peer)
-    puts "Starting connection with #{@peers[peer][0]}:#{@peers[peer][1]}"
-    
-    # for clean exit if no peers exist
+    # for clean exit if no peers exist (needs to be before @peers[peer][..])
     if @peers.empty?
       puts "Aborting connection, no available peers"
       return
     end
+    
+    puts "Starting connection with #{@peers[peer][0]}:#{@peers[peer][1]}"
     
     begin #Begin error handling.
           #Only really need to worry about initial protocol setup, after

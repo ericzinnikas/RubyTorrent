@@ -132,7 +132,7 @@ class FileIO
 
     @completePieces = countLoaded
     perc = (@completePieces * 100) / ( @totalPieces * 100) / 100
-    puts "Checked: #{perc}% complete file (#{@completePieces}/#{@totalPieces}."
+    puts "Checked: #{perc}% complete file (#{@completePieces}/#{@totalPieces})."
     perc
   end
   
