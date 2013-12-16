@@ -68,6 +68,7 @@ class FileIO
 
   def recheckComplete
     info = @info_dictionary
+    @piece_files = Array.new #don't wanna overwrite old array, so start new
     # check which pieces are valid per the included hashes, set bits in bitfield
     # populate @piece_files array
     fieldSize = info["pieces"].length / 20
@@ -155,6 +156,7 @@ class FileIO
     while num_files - 1 > 0
       num_files -= 1
       file_index += 1
+      puts "NF: #{num_files} | FI: #{file_index} (#{@files.length})"
       @files[file_index][0].seek(0, IO::SEEK_SET)
       # Got an "undefined method `[]` for nilNilClass" error here...once?>
       bytes += @files[file_index][0].read(@pieceLength - bytes.bytesize)
