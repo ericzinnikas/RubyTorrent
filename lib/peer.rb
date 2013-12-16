@@ -263,8 +263,11 @@ class Peer
         puts "Bit #{piece_index} set"
 
         # need to choose a new piece to work on
-        @work_piece = @fileio.getBitfield.bits_to_get( @bitfield ).sample
-        @work_offset = 0
+        needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
+        unless needed_bits.empty?
+          @work_piece = needed_bits.sample
+          @work_offset = 0
+        end
       else
         # piece not complete, request other blocks
         @work_offset += BLOCK_SIZE
