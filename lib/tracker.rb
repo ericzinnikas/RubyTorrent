@@ -100,8 +100,8 @@ class Tracker
         port = @peers.byteslice( portOff, 2 ).bytes
         intPort = (port[0] << 8) | port[1]
         @peersNew << [ IPAddr.new(@peers.byteslice( ipOff, 4 ).reverse.unpack("!L")[0], Socket::AF_INET).to_s, intPort ]
-        @peers = @peersNew
       }
+      @peers = @peersNew
     else
       @peers = [] # set to empty array (for nil case)
     end
