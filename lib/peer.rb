@@ -111,12 +111,19 @@ class Peer
       data = socket.read( len - 1 )
     when 7
       puts "Got piece message"
+      # check to see if we already have this piece?
+      # technically, we should only get pieces we
+      # request, but it can't hurt
       
       piece_index = socket.read(4).unpack("N")[0]
       begin_offset = socket.read(4).unpack("N")[0]
       
-      block_bytes = socket.read(len - 9)
       recvd_size = len - 9
+      block_bytes = socket.read( recvd_size )
+
+      if @bitfield.check_bit( piece_index )
+        return
+      end
       
       piece_offset = piece_index * @fileio.pieceLength
       file_index = nil
@@ -140,6 +147,12 @@ class Peer
         num_bytes_written += chunk.bytesize
         @fileio.files[file_index][0].write(chunk)
       end
+
+      # after writing to file, we need to recheck this piece to see if it is now complete
+      # something like:
+      # @fileio.rehash( piece_index )
+      # then rehash will compare the SHA1 in piece index w/the info["pieces"] string
+      # and take appropriate action
     when 8
       puts "Got cancel message"
       data = socket.read( len - 1 )
