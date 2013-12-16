@@ -1,4 +1,5 @@
 # Handle incoming and outgoing communication with other peers
+ require 'thread'
 
 module Torrent	
 
@@ -17,6 +18,10 @@ class Peer
   # no data will be sent until unchoking happens
   @peer_choking = true
   @peer_interested = false
+
+  @lock = Mutex.new
+  # seems we only need to watch access
+  # to the FileIO class (as that stores file state info)
   
   # peer's bitfield
   @bitfield = nil
@@ -96,6 +101,10 @@ class Peer
       @peer_interested = false
     when 4
       puts "Got have message"
+      # build logic to ask peers for pieces
+      # maybe trigger a request msg once we learn
+      # they have a piece we need? or maybe trigger it
+      # after loading a bitfield....
       data = socket.read( len - 1 )
       @bitfield.set_bit(data.unpack("N")[0])
       #puts @bitfield.to_binary_string
@@ -111,12 +120,27 @@ class Peer
       data = socket.read( len - 1 )
     when 7
       puts "Got piece message"
+      # check to see if we already have this piece?
+      # technically, we should only get pieces we
+      # request, but it can't hurt
+      #
+      # Also, I don't think we need to synchronize access
+      # to this with a mutex. Because peers will probably
+      # be writing at separate times, right?
+
+      # Better safe than sorry for now.
       
       piece_index = socket.read(4).unpack("N")[0]
       begin_offset = socket.read(4).unpack("N")[0]
       
-      block_bytes = socket.read(len - 9)
       recvd_size = len - 9
+      block_bytes = socket.read( recvd_size )
+
+      @lock.synchronize {
+
+      if @fileio.getBitfield.check_bit( piece_index )
+        return
+      end
       
       piece_offset = piece_index * @fileio.pieceLength
       file_index = nil
@@ -141,6 +165,14 @@ class Peer
         num_bytes_written += chunk.bytesize
         @fileio.files[file_index][0].write(chunk)
       end
+
+      } # end synchronize
+
+      # after writing to file, we need to recheck this piece to see if it is now complete
+      # something like:
+      # @fileio.rehash( piece_index )
+      # then rehash will compare the SHA1 in piece index w/the info["pieces"] string
+      # and take appropriate action
     when 8
       puts "Got cancel message"
       data = socket.read( len - 1 )
@@ -195,6 +227,7 @@ class Peer
   
   def send_piece(socket, piece_index, begin_offset)
     # might be a better way to cache piece/length offsets for multiple files
+    # Could build an array in FileIO that stores [[file, offset], ...] for each piece
     piece_offset = piece_index * @fileio.pieceLength
     file_index = nil
     filelength_offset = 0
