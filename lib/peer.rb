@@ -120,15 +120,20 @@ class Peer
 
       send_bitfield( socket )
 
-      loop {
-        if socket.eof?
-          puts "Connection closed by peer"
-          break
-        end
+      begin
+        loop {
+          if socket.eof?
+            puts "Connection closed by peer"
+            break
+          end
 
-        parseMessages( socket )
+          parseMessages( socket )
 
-      }
+        }
+      rescue Errno::ECONNRESET
+        puts "Connection reset (maybe we're done?)"
+        return false
+      end
     else
       return false
     end

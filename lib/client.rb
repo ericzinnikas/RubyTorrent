@@ -32,13 +32,13 @@ class Client
     tracker.setLeft(leftBytes)
     # we should also be opening a socket to listen
     # on some port
-    peer = Peer.new(tracker, fileio)
 
     # check here if we're done with the file
     if fileio.recheckComplete == "100."
       puts "Starting as Seed." 
       tracker.setLeft( 0 )
       tracker.sendRequest("started")
+      peer = Peer.new(tracker, fileio)
       seedCon = TCPServer.new( 6889 ) #arbitrary port
       begin
         loop do
@@ -50,6 +50,7 @@ class Client
       end
     else
       tracker.sendRequest("started")
+      peer = Peer.new(tracker, fileio)
       peer.connect(ARGV[1].to_i)
     end
     
