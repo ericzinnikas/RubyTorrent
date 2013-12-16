@@ -39,9 +39,13 @@ class Client
       puts "Starting as Seed." 
       tracker.setLeft( 0 )
       seedCon = TCPServer.new( 6889 ) #arbitrary port
-      loop do
-        client = seedCon.accept
-        peer.seed( client )
+      begin
+        loop do
+          client = seedCon.accept
+          peer.seed( client )
+        end
+      rescue Interrupt
+        tracker.sendRequest("stopped")
       end
     else
       peer = Peer.new(tracker, fileio)
