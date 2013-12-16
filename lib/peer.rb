@@ -132,9 +132,7 @@ class Peer
       
       piece_index = socket.read(4).unpack("N")[0]
       begin_offset = socket.read(4).unpack("N")[0]
-      
-      recvd_size = len - 9
-      block_bytes = socket.read( recvd_size )
+      block_bytes = socket.read( len - 9 )
 
       @lock.synchronize {
 
@@ -142,31 +140,8 @@ class Peer
         return
       end
       
-      piece_offset = piece_index * @fileio.pieceLength
-      file_index = nil
-      filelength_offset = 0
-      @fileio.files.each_with_index { |file, index|
-        if filelength_offset + file[1] > piece_offset + begin_offset
-          file_index = index
-          break
-        else
-          filelength_offset += file[1]
-        end
-      }
+      set_piece_bytes(piece_index, begin_offset, block_bytes)
       
-      @fileio.files[file_index][0].seek((piece_offset + begin_offset) - filelength_offset, IO::SEEK_SET)
-      chunk = block_bytes.byteslice(0, @fileio.files[file_index][1] - (piece_offset + begin_offset) - filelength_offset)
-      num_bytes_written = chunk.bytesize
-      @fileio.files[file_index][0].write(chunk)
-      
-      while num_bytes_written != recvd_size
-        file_index++
-        @fileio.files[file_index][0].seek(0, IO::SEEK_SET)     
-        chunk = block_bytes.byteslice(num_bytes_written, @fileio.files[file_index][1])
-        num_bytes_written += chunk.bytesize
-        @fileio.files[file_index][0].write(chunk)
-      end
-
       } # end synchronize
 
       # after writing to file, we need to recheck this piece to see if it is now complete

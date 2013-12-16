@@ -86,10 +86,6 @@ class FileIO
         @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
       }
     else
-      # Maybe read all the files into a string...? Would this kill
-      # Ruby if the files were large though?
-      #
-      # This would probably work, but per @177 on Piazza we would lose points
       # NEEDS TESTING
       countLoaded = 0
       
@@ -128,8 +124,33 @@ class FileIO
       }
     end
     
-    puts "Loaded #{(countLoaded*100 / ( numBytes / @pieceLength )*100) / 100}% complete file."
+    puts "Loaded #{(countLoaded*100 / ( info["pieces"].bytesize / 20 )*100) / 100}% complete file."
     puts @bitfield.to_binary_string
+  end
+  
+  def set_piece_bytes(piece_index, begin_offset, bytes)
+    file_index, first_file_offset, num_files = @piece_files[piece_index]
+    upper_filelength_offset = @files[file_index][1] - first_file_offset
+    while upper_filelength_offset < begin_offset
+      file_index++
+      upper_filelength_offset += @files[file_index][1]
+    end
+    
+    seek_pos = @files[file_index][1] - (upper_filelength_offset - begin_offset)
+    @files[file_index][0].seek(seek_pos, IO::SEEK_SET)
+
+    chunk = bytes.byteslice(0, @files[file_index][1] - seek_pos)
+    num_bytes_written = chunk.bytesize
+    @files[file_index][0].write(chunk)
+    
+    byte_size = bytes.byte_size
+    while num_bytes_written != byte_size
+      file_index++
+      @files[file_index][0].seek(0, IO::SEEK_SET)     
+      chunk = bytes.byteslice(num_bytes_written, @files[file_index][1])
+      num_bytes_written += chunk.bytesize
+      @files[file_index][0].write(chunk)
+    end
   end
   
   def get_piece_bytes(piece_index)
