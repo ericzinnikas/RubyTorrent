@@ -170,7 +170,7 @@ class Peer
     when 1
       # only send data messages when unchoked
       puts "Got unchoke message"
-      send_request( socket, @work_piece, @work_offset)
+      send_request( socket, @work_piece, @work_offset )
       #(1..10).each { |n| # fill the pipeline
         #send_request( socket, @work_piece, @work_offset + n*BLOCK_SIZE )
       #}
