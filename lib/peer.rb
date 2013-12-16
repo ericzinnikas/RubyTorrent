@@ -65,6 +65,7 @@ class Peer
         socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
       rescue Interrupt
         puts "Connection to peer cancelled."
+        @tracker.sendRequest("stopped")
         return false
       end
     
