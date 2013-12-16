@@ -173,7 +173,7 @@ class Peer
       actualHash = info["pieces"].byteslice(piece_index * 20, 20)
       pieceHash = @fileio.get_piece_hash(piece_index)
       
-      if pieceHash == compHash
+      if pieceHash == actualHash
         @bitfield.set_bit(piece_index)
         countLoaded += 1
         puts "Bit #{piece_index} set"
