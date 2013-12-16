@@ -80,7 +80,6 @@ class Peer
     end
 
     id = socket.read( 1 ).unpack("c")[0]
-    data = socket.read( len - 1 ) # not all messages have data to read, could be an issue?
 
     case id
     when 0
@@ -97,23 +96,57 @@ class Peer
       @peer_interested = false
     when 4
       puts "Got have message"
+      data = socket.read( len - 1 )
       @bitfield.set_bit(data.unpack("N")[0])
       #puts @bitfield.to_binary_string
     when 5
       puts "Got bitfield message"
       # note, many clients will send incomplete bitfield, then supplement
       # remaining gaps with "have" messages (called lazy bitfield)
+      data = socket.read( len - 1 )
       @bitfield.from_binary_data(data)
       #puts @bitfield.to_binary_string
     when 6
       puts "Got request message"
+      data = socket.read( len - 1 )
     when 7
       puts "Got piece message"
+      
+      piece_index = socket.read(4).unpack("N")[0]
+      begin_offset = socket.read(4).unpack("N")[0]
+      
+      block_bytes = socket.read(len - 9)
+      recvd_size = len - 9
+      
+      piece_offset = piece_index * @fileio.pieceLength
+      file_index = nil
+      filelength_offset = 0
+      @fileio.files.each_with_index { |file, index|
+        if filelength_offset + file[1] > piece_offset + begin_offset
+          file_index = index
+        else
+          filelength_offset += file[1]
+        end
+      }
+      
+      @fileio.files[file_index][0].seek((piece_offset + begin_offset) - filelength_offset, IO::SEEK_SET)
+      chunk = block_bytes.byteslice(0, @fileio.files[file_index][1] - (piece_offset + begin_offset) - filelength_offset)
+      num_bytes_written = chunk.bytesize
+      @fileio.files[file_index][0].write(chunk)
+      
+      while num_bytes_written != recvd_size
+        @fileio.files[++file_index][0].seek(0, IO::SEEK_SET)     
+        chunk = block_bytes.byteslice(num_bytes_written, @fileio.files[file_index][1])
+        num_bytes_written += chunk.bytesize
+        @fileio.files[file_index][0].write(chunk)
+      end
     when 8
       puts "Got cancel message"
+      data = socket.read( len - 1 )
     when 9
-      puts "Got port message"
       # only needed with DHT
+      puts "Got port message"
+      data = socket.read( len - 1 )
     else
       puts "Unsupported Protocol Message #{id}"
     end
@@ -165,18 +198,23 @@ class Peer
     file_index = nil
     filelength_offset = 0
     @fileio.files.each_with_index { |file, index|
-      if filelength_offset + file[1] > piece_offset
+      if filelength_offset + file[1] > piece_offset + begin_offset
         file_index = index
       else
         filelength_offset += file[1]
       end
     }
     
-    @fileio.files[file_index][0].seek(piece_offset - filelength_offset, IO::SEEK_SET)
-    block_bytes = @fileio.files[file_index][0].read(BLOCK_SIZE) # is it okay if it reads bytes from next piece?
+    @fileio.files[file_index][0].seek((piece_offset + begin_offset) - filelength_offset, IO::SEEK_SET)
+    block_bytes = @fileio.files[file_index][0].read(BLOCK_SIZE)
+    
+    while block_bytes.bytesize != BLOCK_SIZE && @fileio.files.length < ++file_index
+      @fileio.files[file_index][0].seek(0, IO::SEEK_SET)
+      block_bytes += @fileio.files[file_index][0].read(BLOCK_SIZE - block_bytes.bytesize)
+    end
     
     # don't use BLOCK_SIZE for <len> part of message, truncated blocks/pieces may be sent
-    socket.write([9 + block_bytes.size, 7, piece_index, begin_offset].pack("NcN2") + block_bytes)
+    socket.write([9 + block_bytes.bytesize, 7, piece_index, begin_offset].pack("NcN2") + block_bytes)
   end
   
   def send_cancel(socket, piece_index, begin_offset)

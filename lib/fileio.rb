@@ -84,6 +84,7 @@ class FileIO
       # This would probably work, but per @177 on Piazza we would lose points
       
       # NEEDS TESTING
+      # TO DO: fix for cases when a piece is spread across more than 2 files
       countLoaded = 0
       lastIndex = @files.length - 1
       currentSeek = 0
