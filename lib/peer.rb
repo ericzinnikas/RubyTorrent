@@ -108,7 +108,7 @@ class Peer
       puts "Invalid infohash received in handshake"
     end
     
-    socket.close 
+    #socket.close 
   end
 
   def seed( socket )
@@ -342,6 +342,7 @@ class Peer
       perc = perc.to_s.slice(0, 4)
       if perc == "100."
         if @fileio.recheckComplete() == "100."
+          socket.close
 
           puts "File download complete!"
           # now exit
