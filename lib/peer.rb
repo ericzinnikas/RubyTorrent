@@ -19,12 +19,15 @@ class Peer
   @peer_choking = true
   @peer_interested = false
 
-  @lock = Mutex.new
-  # seems we only need to watch access
-  # to the FileIO class (as that stores file state info)
+  # [[piece_index, begin_offset, req_length], ...] - see spec for more info on these 3 vars
+  @pending_requests = nil
   
   # peer's bitfield
   @bitfield = nil
+  
+  @lock = Mutex.new
+  # seems we only need to watch access
+  # to the FileIO class (as that stores file state info)
   
   def initialize(tracker, fileio)
     @peers = tracker.getPeers
@@ -32,6 +35,7 @@ class Peer
     @info_hash = tracker.getInfoHash
     @length = tracker.askMI.getLength
     @fileio = fileio
+    @pending_requests = Array.new
     @bitfield = Bitfield.new(fileio.getBitfield.get_num_of_bits)
   end
   
@@ -97,6 +101,7 @@ class Peer
     when 0
       puts "Got choke message"
       @peer_choking = true
+      @pending_requests = [] # choke discards all unanswered requests
     when 1
       puts "Got unchoke message"
       @peer_choking = false
@@ -124,7 +129,7 @@ class Peer
       #puts @bitfield.to_binary_string
     when 6
       puts "Got request message"
-      data = socket.read( len - 1 )
+      @pending_requests << socket.read(12).unpack("N3")
     when 7
       puts "Got piece message"
       # check to see if we already have this piece?
@@ -137,8 +142,7 @@ class Peer
 
       # Better safe than sorry for now.
       
-      piece_index = socket.read(4).unpack("N")[0]
-      begin_offset = socket.read(4).unpack("N")[0]
+      piece_index, begin_offset = socket.read(8).unpack("N2")
       block_bytes = socket.read( len - 9 )
 
       @lock.synchronize {
