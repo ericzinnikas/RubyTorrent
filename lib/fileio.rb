@@ -183,6 +183,18 @@ class FileIO
   def getBitfield
     @bitfield
   end
+
+  def getComplete
+    @completePieces
+  end
+
+  def getTotal
+    @totalPieces
+  end
+
+  def setComplete( n )
+    @completePieces += n
+  end
   
 end
 

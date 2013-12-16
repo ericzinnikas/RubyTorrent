@@ -106,9 +106,23 @@ class Peer
   # 'peer' argument is the index of the peer in the peers array.
   def handshake(socket)
     raw_data = [19, "BitTorrent protocol"] + Array.new(8, 0) << @info_hash << @local_peer_id
+
+    sel = IO.select([], [socket], [], 15);
+
+    if sel.nil?
+      puts "Timed out waiting to write."
+      exit
+    end
     
     socket.write(raw_data.pack("cA19c8A20A20"))
     puts "Sent handshake"
+
+    sel = IO.select([socket], [], [], 15);
+
+    if sel.nil?
+      puts "Timed out waiting to read."
+      exit
+    end
 
     pstrlen = socket.read(1).unpack("c")[0]
     response = socket.read( 48 + pstrlen )
@@ -158,22 +172,38 @@ class Peer
       data = socket.read( len - 1 )
       @bitfield.set_bit(data.unpack("N")[0])
       #puts @bitfield.to_binary_string
+      if @work_piece.nil?
+        @work_piece = @fileio.getBitfield.bits_to_get( @bitfield ).sample
+        @work_offset = 0
+
+        puts "Starting work on piece #{@work_piece}"
+
+        # send request for first block
+        send_request( socket, @work_piece, @work_offset )
+      end
     when 5
       puts "Got bitfield message"
       # note, many clients will send incomplete bitfield, then supplement
       # remaining gaps with "have" messages (called lazy bitfield)
       data = socket.read( len - 1 )
       @bitfield.from_binary_data(data)
-      #puts @bitfield.to_binary_string
+      
 
       #select random piece to work on
       if @work_piece.nil?
-        @work_piece = @fileio.bits_to_get( @bitfield ).sample
+        @work_piece = @fileio.getBitfield.bits_to_get( @bitfield ).sample
         @work_offset = 0
+
+        puts "Starting work on piece #{@work_piece}"
 
         # send request for first block
         send_request( socket, @work_piece, @work_offset )
+        send_request( socket, @work_piece, @work_offset + BLOCK_SIZE )
+        send_request( socket, @work_piece, @work_offset + 2*BLOCK_SIZE )
+        send_request( socket, @work_piece, @work_offset + 3*BLOCK_SIZE )
       end
+
+      puts @bitfield.to_binary_string
     when 6
       puts "Got request message"
       @pending_requests << socket.read(12).unpack("N3")
@@ -207,12 +237,12 @@ class Peer
       pieceHash = @fileio.get_piece_hash(piece_index)
       
       if pieceHash == actualHash
-        @fileio.bitfield.set_bit(piece_index)
-        @fileio.completePieces += 1
+        @fileio.getBitfield.set_bit(piece_index)
+        @fileio.setComplete(1)
         puts "Bit #{piece_index} set"
 
         # need to choose a new piece to work on
-        @work_piece = @fileio.bits_to_get( @bitfield ).sample
+        @work_piece = @fileio.getBitfield.bits_to_get( @bitfield ).sample
         @work_offset = 0
       else
         # piece not complete, request other blocks
@@ -220,7 +250,7 @@ class Peer
         send_request( socket, @work_piece, @work_offset )
       end
 
-      perc = (@fileio.completePieces * 100) / (@fileio.totalPieces * 100) / 100
+      perc = (@fileio.getComplete * 100) / (@fileio.getTotal * 100) / 100
       if perc == 100
         if @fileio.recheckComplete() == 100
 
@@ -292,7 +322,7 @@ class Peer
   end
   
   def send_request(socket, piece_index, begin_offset)
-    puts "Sent request message"
+    puts "Sent request message for piece #{piece_index} (#{begin_offset})"
     socket.write([13, 6, piece_index, begin_offset, BLOCK_SIZE].pack("NcN3"))
   end
   
