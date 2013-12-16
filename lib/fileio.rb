@@ -151,14 +151,10 @@ class FileIO
     @files[file_index][0].seek(first_file_offset, IO::SEEK_SET)
     bytes = @files[file_index][0].read(@pieceLength)
 
-    puts "Findex: #{file_index} | FFoff: #{first_file_offset} | NF: #{num_files}"
-    
     while num_files - 1 > 0
       num_files -= 1
       file_index += 1
-      puts "NF: #{num_files} | FI: #{file_index} (#{@files.length})"
       @files[file_index][0].seek(0, IO::SEEK_SET)
-      # Got an "undefined method `[]` for nilNilClass" error here...once?>
       bytes += @files[file_index][0].read(@pieceLength - bytes.bytesize)
     end
     bytes
