@@ -82,72 +82,40 @@ class FileIO
       # Ruby if the files were large though?
       #
       # This would probably work, but per @177 on Piazza we would lose points
-      
       # NEEDS TESTING
-      # TO DO: fix for cases when a piece is spread across more than 2 files
       countLoaded = 0
-      lastIndex = @files.length - 1
-      currentSeek = 0
-      pieceOffset = 0
-      @files.each_with_index { |file, index|
-        pieces = file[1] / @pieceLength
-        partialPieces = (file[1] % @pieceLength) != 0
-        
-        # iterate over all complete pieces in file
-        pieces.times { |pieceIndex|
-          # in case partial piece in beginning & end but file[1] % @pieceLength = 0
-          if (currentSeek + @pieceLength > file[1])
-            partialPieces = true
+      
+      (info["pieces"].bytesize / 20).times { |piece_index|
+        piece_offset = piece_index * @pieceLength
+        file_index = nil
+        filelength_offset = 0
+        @files.each_with_index { |file, index|
+          if filelength_offset + file[1] > piece_offset
+            file_index = index
             break
+          else
+            filelength_offset += file[1]
           end
-          
-          file[0].seek( currentSeek, IO::SEEK_SET )
-          bytes = file[0].read( @pieceLength )
-          
-          pieceHash = Digest::SHA1.digest( bytes )
-          compHash = info["pieces"].byteslice( (pieceIndex + pieceOffset) * 20, 20 )
-          
-          if pieceHash == compHash
-            @bitfield.set_bit( pieceIndex + pieceOffset )
-            countLoaded += 1
-            puts "Bit #{pieceIndex + pieceOffset} set"
-          end
-          
-          currentSeek += @pieceLength
         }
         
-        # handle partial piece at end of file
-        if partialPieces
-          # read to end of first file
-          file[0].seek( currentSeek, IO::SEEK_SET )
-          bytes = file[0].read( @pieceLength ) # okay to read more bytes than exist? will there be empty bytes? test this
-          partialByteLength = @pieceLength - bytes.length
-          
-          if (index != @files.length - 1) # last partial piece CAN have truncated length
-            # reading beginning of next file
-            @files[index + 1][0].seek( 0, IO::SEEK_SET )
-            bytes += @files[index + 1][0].read( partialByteLength )
-          end
-          
-          pieceHash = Digest::SHA1.digest( bytes )
-          compHash = info["pieces"].byteslice( (pieces + pieceOffset) * 20, 20 )
-          
-          if pieceHash == compHash
-            @bitfield.set_bit( pieces + pieceOffset )
-            countLoaded += 1
-          end
-          
-          # start currentSeek to exclude the preceding partial bytes in the next file
-          currentSeek = partialByteLength
-        else
-          # if no partial file, start currentSeek at the beginning for the next file
-          currentSeek = 0
+        @files[file_index][0].seek(piece_offset - filelength_offset, IO::SEEK_SET)
+        block_bytes = @files[file_index][0].read(@pieceLength)
+        
+        while block_bytes.bytesize != @pieceLength && @files.length < ++file_index
+          @files[file_index][0].seek(0, IO::SEEK_SET)
+          block_bytes += @fileio.files[file_index][0].read(@pieceLength - block_bytes.bytesize)
         end
         
-        # maintain offset of pieces from previous file for next file
-        pieceOffset += pieces
+        pieceHash = Digest::SHA1.digest( block_bytes )
+        compHash = info["pieces"].byteslice( (piece_index + piece_offset) * 20, 20 )
+        
+        if pieceHash == compHash
+          @bitfield.set_bit(piece_index)
+          countLoaded += 1
+          puts "Bit #{piece_index + piece_offset} set"
+        end
       }
-
+      
       puts "Loaded #{(countLoaded*100 / ( numBytes / @pieceLength )*100) / 100}% complete file."
       puts @bitfield.to_binary_string
     end

@@ -124,6 +124,7 @@ class Peer
       @fileio.files.each_with_index { |file, index|
         if filelength_offset + file[1] > piece_offset + begin_offset
           file_index = index
+          break
         else
           filelength_offset += file[1]
         end
@@ -200,6 +201,7 @@ class Peer
     @fileio.files.each_with_index { |file, index|
       if filelength_offset + file[1] > piece_offset + begin_offset
         file_index = index
+        break
       else
         filelength_offset += file[1]
       end
