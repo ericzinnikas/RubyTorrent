@@ -33,6 +33,22 @@ class Bitfield
       @bit_array[offset] ^= (1 << shift_num)
     end
   end
+  
+  # returns an array of bit indices (i.e. piece indices) that are available to
+  # get from a given bitfield.
+  #
+  # usage: local_bitfield.bits_to_get(peer_bitfield) returns indices that peer
+  # has and local needs.
+  def bits_to_get(bitfield)
+    bytes_to_get = Array.new
+    bitfield.get_byte_array.each_with_index { |byte, index|
+      bytes_to_get.push(byte & (byte ^ @bit_array[index]))
+    }
+    bit_arr = to_binary_string_from_array(bytes_to_get).chars.to_a
+    bit_arr = bit_arr.zip((0...bit_arr.size).to_a)
+    bit_arr.delete_if { |a| a[0] == "0" }
+    bit_arr.transpose[1]
+  end
 
   # used for sending messages with bitmask
   def to_binary_data
@@ -46,8 +62,12 @@ class Bitfield
   
   # e.g. "010101"
   def to_binary_string
+    to_binary_string_from_array(@bit_array)
+  end
+  
+  def to_binary_string_from_array(array)
     out = String.new
-    @bit_array.each { |byte|
+    array.each { |byte|
       suffix_bits = byte.to_s(2)
       prefix_bits = "0" * (8 - suffix_bits.length) # ensure each byte is 8 chars
       out << (prefix_bits + suffix_bits)
@@ -68,6 +88,12 @@ class Bitfield
     @num_of_bits
   end
   
+  # the *byte* representation of the bitfield
+  def get_byte_array
+    @bit_array
+  end
+  
+  private :to_binary_string_from_array
 end
   
 end
