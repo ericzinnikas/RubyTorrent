@@ -175,6 +175,7 @@ class Peer
     @fileio.files[file_index][0].seek(piece_offset - filelength_offset, IO::SEEK_SET)
     block_bytes = @fileio.files[file_index][0].read(BLOCK_SIZE) # is it okay if it reads bytes from next piece?
     
+    # don't use BLOCK_SIZE for <len> part of message, truncated blocks/pieces may be sent
     socket.write([9 + block_bytes.size, 7, piece_index, begin_offset].pack("NcN2") + block_bytes)
   end
   
