@@ -47,7 +47,12 @@ class Bitfield
     bit_arr = to_binary_string_from_array(bytes_to_get).chars.to_a
     bit_arr = bit_arr.zip((0...bit_arr.size).to_a)
     bit_arr.delete_if { |a| a[0] == "0" }
-    bit_arr.transpose[1]
+    indices = bit_arr.transpose[1]
+    unless indices.nil?
+      indices
+    else
+      Array.new
+    end
   end
 
   # used for sending messages with bitmask
