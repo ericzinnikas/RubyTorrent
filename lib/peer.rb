@@ -246,8 +246,11 @@ class Peer
 
       if @fileio.getBitfield.check_bit( piece_index )
         # TODO choose a new piece to work on
-        @work_piece = @fileio.getBitfield.bits_to_get( @bitfield ).sample
-        @work_offset = 0
+        needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
+        unless needed_bits.empty?
+          @work_piece = needed_bits.sample
+          @work_offset = 0
+        end
         return
       end
       
