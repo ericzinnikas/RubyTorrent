@@ -24,7 +24,8 @@ class Client
       Dir.glob("*.torrent") { |name|
         tList << Thread.new {
           puts "Loading #{name}"
-          metainfo = Metainfo.new(name)
+          fh = File.new(name, "r")
+          metainfo = Metainfo.new(fh)
           
           fileio = FileIO.new(metainfo.getInfo)
 
