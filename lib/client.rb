@@ -19,9 +19,10 @@ class Client
   end
   
   def runClient
+    tList = Array.new
     Dir.chdir(@torrent_directory) {
       Dir.glob("*.torrent") { |name|
-        Thread.new {
+        tList << Thread.new {
           puts "Loading #{name}"
           metainfo = Metainfo.new(name)
           
@@ -57,6 +58,10 @@ class Client
           end
         }
       }
+    }
+
+    tList.each { |t|
+      t.join
     }
     
     # TODO: eventually for off here to other peers
