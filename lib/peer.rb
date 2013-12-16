@@ -11,12 +11,12 @@ class Peer
   @info_hash = nil
   @fileio = nil
   
-  @local_choking = nil
-  @local_interested = nil
+  @local_choking = true
+  @local_interested = false
   
   # no data will be sent until unchoking happens
-  @peer_choking = nil
-  @peer_interested = nil
+  @peer_choking = true
+  @peer_interested = false
   
   # peer's bitfield
   @bitfield = nil
