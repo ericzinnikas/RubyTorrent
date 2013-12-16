@@ -273,8 +273,9 @@ class Peer
       if ! @peer_choking
         send_request( socket, @work_piece, @work_offset )
       end
-
-      perc = ((@fileio.getComplete * 100) / (@fileio.getTotal * 100)) / 100
+      
+      perc = (@fileio.getComplete.to_f / @fileio.getTotal.to_f) * 100
+      perc = perc.to_s.slice(0, 4)
       if perc == 100
         if @fileio.recheckComplete() == 100
 
@@ -347,7 +348,16 @@ class Peer
   
   def send_request(socket, piece_index, begin_offset)
     puts "Sent request message for piece #{piece_index} (#{begin_offset})"
-    socket.write([13, 6, piece_index, begin_offset, BLOCK_SIZE].pack("NcN3"))
+    
+    # account for last block in last piece which may be truncated
+    req_len = nil
+    if piece_index == @fileio.getTotal - 1 && begin_offset == (@fileio.getLastPieceLen / BLOCK_SIZE) * BLOCK_SIZE
+      req_len = @fileio.getLastPieceLen - begin_offset
+    else
+      req_len = BLOCK_SIZE
+    end
+    
+    socket.write([13, 6, piece_index, begin_offset, req_len].pack("NcN3"))
   end
   
   def send_piece(socket, piece_index, begin_offset)
@@ -360,7 +370,16 @@ class Peer
   
   def send_cancel(socket, piece_index, begin_offset)
     puts "Sent cancel message"
-    socket.write([13, 8, piece_index, begin_offset, BLOCK_SIZE].pack("NcN3"))
+    
+    # account for last block in last piece which may be truncated
+    req_len = nil
+    if piece_index == @fileio.getTotal - 1 && begin_offset == (@fileio.getLastPieceLen / BLOCK_SIZE) * BLOCK_SIZE
+      req_len = @fileio.getLastPieceLen - begin_offset
+    else
+      req_len = BLOCK_SIZE
+    end
+    
+    socket.write([13, 8, piece_index, begin_offset, req_len].pack("NcN3"))
   end
   
   # only needed with DHT

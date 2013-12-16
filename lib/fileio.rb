@@ -12,6 +12,7 @@ class FileIO
   
   @bitfield = nil
   @pieceLength = nil
+  @lastPieceLength = nil # length of last piece, which can be irregular
 
   @completePieces = 0
   @totalPieces = nil
@@ -72,7 +73,8 @@ class FileIO
     fieldSize = info["pieces"].length / 20
     @bitfield = Bitfield.new( fieldSize )
     countLoaded = 0
-
+    
+    bytes = nil
     if info["files"].nil?
       (0..@numBytes).step( @pieceLength ) { |n|
         @piece_files << [0, n, 1]
@@ -129,7 +131,8 @@ class FileIO
         end
       }
     end
-
+    @lastPieceLength = bytes.bytesize
+    
     @completePieces = countLoaded
     perc = (@completePieces.to_f / @totalPieces.to_f) * 100
     perc = perc.to_s.slice(0, 4)
@@ -196,6 +199,10 @@ class FileIO
 
   def getInfoDict
     @info_dictionary
+  end
+  
+  def getLastPieceLen
+    @lastPieceLength
   end
 
   def setComplete( n )
