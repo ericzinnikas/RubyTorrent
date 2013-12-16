@@ -66,7 +66,6 @@ class FileIO
     if info["files"].nil?
       countLoaded = 0
       (0..numBytes).step( @pieceLength ) { |n|
-      # NEEDS TESTING
         @piece_files << [0, n, 1]
         
         @files[0][0].seek( n, IO::SEEK_SET )
@@ -86,7 +85,6 @@ class FileIO
         @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
       }
     else
-      # NEEDS TESTING
       countLoaded = 0
       
       (info["pieces"].bytesize / 20).times { |piece_index|     
@@ -107,10 +105,11 @@ class FileIO
         @files[file_index][0].seek(@piece_files[piece_index][1], IO::SEEK_SET)
         bytes = @files[file_index][0].read(@pieceLength)
         
-        while bytes.bytesize != @pieceLength && @files.length < ++file_index
+        while bytes.bytesize != @pieceLength && file_index + 1 < @files.length
+          file_index += 1
           @piece_files[piece_index][2] += 1
           @files[file_index][0].seek(0, IO::SEEK_SET)
-          bytes += @fileio.files[file_index][0].read(@pieceLength - bytes.bytesize)
+          bytes += @files[file_index][0].read(@pieceLength - bytes.bytesize)
         end
         
         pieceHash = Digest::SHA1.digest( bytes )
@@ -119,7 +118,7 @@ class FileIO
         if pieceHash == compHash
           @bitfield.set_bit(piece_index)
           countLoaded += 1
-          puts "Bit #{piece_index} set"
+          #puts "Bit #{piece_index} set"
         end
       }
     end
@@ -132,7 +131,7 @@ class FileIO
     file_index, first_file_offset, num_files = @piece_files[piece_index]
     upper_filelength_offset = @files[file_index][1] - first_file_offset
     while upper_filelength_offset < begin_offset
-      file_index++
+      file_index += 1
       upper_filelength_offset += @files[file_index][1]
     end
     
@@ -145,7 +144,7 @@ class FileIO
     
     byte_size = bytes.byte_size
     while num_bytes_written != byte_size
-      file_index++
+      file_index += 1
       @files[file_index][0].seek(0, IO::SEEK_SET)     
       chunk = bytes.byteslice(num_bytes_written, @files[file_index][1])
       num_bytes_written += chunk.bytesize
@@ -158,8 +157,9 @@ class FileIO
     @files[file_index][0].seek(first_file_offset, IO::SEEK_SET)
     bytes = @files[file_index][0].read(@pieceLength)
     
-    while --num_files > 0
-      file_index++
+    while num_files - 1 > 0
+      num_files -= 1
+      file_index += 1
       @files[file_index][0].seek(0, IO::SEEK_SET)
       bytes += @files[file_index][0].read(@pieceLength - bytes.bytesize)
     end
