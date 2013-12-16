@@ -12,6 +12,9 @@ class FileIO
   
   @bitfield = nil
   @pieceLength = nil
+
+  @completePieces = 0
+  @totalPieces = nil
   
   # accepts the info hash from metainfo
   def initialize(info) 
@@ -19,8 +22,8 @@ class FileIO
     @files = Array.new
     @piece_files = Array.new
     @pieceLength = info["piece length"]
-
-    numBytes = 0
+    @numBytes = 0
+    @totalPieces = info["pieces"].bytesize / 20
     
     if info["files"] != nil
       # multiple file mode
@@ -30,7 +33,7 @@ class FileIO
       end
       
       info["files"].each { |file|
-        numBytes += file["length"]
+        @numBytes += file["length"]
         filename = file["path"].last
         
         build_dir = info["name"] + File::SEPARATOR # for making directory trees
@@ -49,23 +52,29 @@ class FileIO
       }
     else
       # single file mode
-      numBytes = info["length"] 
+      @numBytes = info["length"] 
       @files << [File.open(info["name"], File::RDWR | File::CREAT), info["length"]]
       if @files.last[0].size < @files.last[1]
         @files.last[0].seek(@files.last[0].size, IO::SEEK_SET)
         @files.last[0].write("\0" * (@files.last[1] - @files.last[0].size))
       end
     end
+
+    recheckComplete()
     
+    puts @bitfield.to_binary_string
+  end
+
+  def recheckComplete
+    info = @info_dictionary
     # check which pieces are valid per the included hashes, set bits in bitfield
     # populate @piece_files array
     fieldSize = info["pieces"].length / 20
     @bitfield = Bitfield.new( fieldSize )
+    countLoaded = 0
 
-    #this will only work for single files right now
     if info["files"].nil?
-      countLoaded = 0
-      (0..numBytes).step( @pieceLength ) { |n|
+      (0..@numBytes).step( @pieceLength ) { |n|
         @piece_files << [0, n, 1]
         
         @files[0][0].seek( n, IO::SEEK_SET )
@@ -85,8 +94,6 @@ class FileIO
         @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
       }
     else
-      countLoaded = 0
-      
       (info["pieces"].bytesize / 20).times { |piece_index|     
         piece_offset = piece_index * @pieceLength
         file_index = nil
@@ -122,9 +129,11 @@ class FileIO
         end
       }
     end
-    
-    puts "Loaded #{(countLoaded*100 / ( info["pieces"].bytesize / 20 )*100) / 100}% complete file."
-    puts @bitfield.to_binary_string
+
+    @completePieces = countLoaded
+    perc = (@completePieces * 100) / ( @totalPieces * 100) / 100
+    puts "Checked: #{perc}% complete file."
+    perc
   end
   
   # untested

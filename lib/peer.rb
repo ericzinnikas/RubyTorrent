@@ -192,9 +192,22 @@ class Peer
       pieceHash = @fileio.get_piece_hash(piece_index)
       
       if pieceHash == actualHash
-        @bitfield.set_bit(piece_index)
-        countLoaded += 1
+        @fileio.bitfield.set_bit(piece_index)
+        @fileio.completePieces += 1
         puts "Bit #{piece_index} set"
+      end
+      perc = (@fileio.completePieces * 100) / (@fileio.totalPieces * 100) / 100
+      if perc == 100
+        if @fileio.recheckComplete() == 100
+
+          puts "File download complete!"
+          # now exit
+          # and trigger all other threads to exit
+        else
+          puts "Recheck failed."
+        end
+      else
+        puts "File #{perc}% complete."
       end
     when 8
       puts "Got cancel message"
