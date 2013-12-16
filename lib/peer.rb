@@ -60,7 +60,12 @@ class Peer
           #Only really need to worry about initial protocol setup, after
           #that we shouldn't be seeing errors.
 
-      socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
+      begin
+        socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
+      rescue Interrupt
+        puts "Connection to peer cancelled."
+        return false
+      end
     
       response = handshake(socket)
 
@@ -124,7 +129,15 @@ class Peer
       exit
     end
 
-    pstrlen = socket.read(1).unpack("c")[0]
+    begin
+      pstrlen = socket.read(1).unpack("c")[0]
+    rescue NoMethodError
+      puts "Received null byte in handshake. Exiting."
+      return false
+    end
+    # Occasionally getting this error:
+    # /home/ericz/417-torrent/lib/peer.rb:127:in `handshake': undefined method `unpack' for nil:NilClass (NoMethodError)
+    
     response = socket.read( 48 + pstrlen )
     puts "Got handshake"
     
@@ -234,7 +247,7 @@ class Peer
       #} # end synchronize
 
       # after writing to file, we need to recheck this piece to see if it is now complete
-      actualHash = info["pieces"].byteslice(piece_index * 20, 20)
+      actualHash = @fileio.getInfoDict["pieces"].byteslice(piece_index * 20, 20)
       pieceHash = @fileio.get_piece_hash(piece_index)
       
       if pieceHash == actualHash

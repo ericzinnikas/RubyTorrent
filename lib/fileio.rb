@@ -62,7 +62,7 @@ class FileIO
 
     recheckComplete()
     
-    puts @bitfield.to_binary_string
+    #puts @bitfield.to_binary_string
   end
 
   def recheckComplete
@@ -160,6 +160,7 @@ class FileIO
       num_bytes_written += chunk.bytesize
       @files[file_index][0].write(chunk)
     end
+    puts "Wrote #{bytes.unpack("H*")}"
   end
   
   # untested
@@ -174,6 +175,8 @@ class FileIO
       @files[file_index][0].seek(0, IO::SEEK_SET)
       bytes += @files[file_index][0].read(@pieceLength - bytes.bytesize)
     end
+    puts "Read #{bytes.unpack("H*")}"
+    bytes
   end
   
   def get_piece_hash(piece_index)   
@@ -190,6 +193,10 @@ class FileIO
 
   def getTotal
     @totalPieces
+  end
+
+  def getInfoDict
+    @info_dictionary
   end
 
   def setComplete( n )
