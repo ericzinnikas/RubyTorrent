@@ -267,7 +267,7 @@ class Peer
         send_request( socket, @work_piece, @work_offset )
       end
 
-      perc = (@fileio.getComplete * 100) / (@fileio.getTotal * 100) / 100
+      perc = ((@fileio.getComplete * 100) / (@fileio.getTotal * 100)) / 100
       if perc == 100
         if @fileio.recheckComplete() == 100
 
@@ -279,7 +279,7 @@ class Peer
           puts "Recheck failed."
         end
       else
-        puts "File #{perc}% complete."
+        puts "File #{perc}% complete (#{@fileio.getComplete}/#{@fileio.getTotal})."
       end
     when 8
       puts "Got cancel message"

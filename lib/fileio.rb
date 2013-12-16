@@ -132,7 +132,7 @@ class FileIO
 
     @completePieces = countLoaded
     perc = (@completePieces * 100) / ( @totalPieces * 100) / 100
-    puts "Checked: #{perc}% complete file."
+    puts "Checked: #{perc}% complete file (#{@completePieces}/#{@totalPieces}."
     perc
   end
   
@@ -160,7 +160,6 @@ class FileIO
       num_bytes_written += chunk.bytesize
       @files[file_index][0].write(chunk)
     end
-    puts "Wrote #{bytes.unpack("H*")}"
   end
   
   # untested
@@ -175,7 +174,6 @@ class FileIO
       @files[file_index][0].seek(0, IO::SEEK_SET)
       bytes += @files[file_index][0].read(@pieceLength - bytes.bytesize)
     end
-    puts "Read #{bytes.unpack("H*")}"
     bytes
   end
   
