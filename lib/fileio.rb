@@ -197,6 +197,10 @@ class FileIO
     @totalPieces
   end
 
+  def getPieceLength
+    @pieceLength
+  end
+
   def getInfoDict
     @info_dictionary
   end

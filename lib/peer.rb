@@ -171,9 +171,9 @@ class Peer
       # only send data messages when unchoked
       puts "Got unchoke message"
       send_request( socket, @work_piece, @work_offset )
-      #(1..10).each { |n| # fill the pipeline
-        #send_request( socket, @work_piece, @work_offset + n*BLOCK_SIZE )
-      #}
+      (1..(( @fileio.getPieceLength / BLOCK_SIZE ) - 1)).each { |n| # fill the pipeline
+        send_request( socket, @work_piece, @work_offset + n*BLOCK_SIZE )
+      }
       @peer_choking = false
     when 2
       # only send data when peer is interested
@@ -246,6 +246,8 @@ class Peer
 
       if @fileio.getBitfield.check_bit( piece_index )
         # TODO choose a new piece to work on
+        @work_piece = @fileio.getBitfield.bits_to_get( @bitfield ).sample
+        @work_offset = 0
         return
       end
       
@@ -270,11 +272,14 @@ class Peer
         end
       else
         # piece not complete, request other blocks
-        @work_offset += BLOCK_SIZE
+        #@work_offset += BLOCK_SIZE
       end
 
       if ! @peer_choking
         send_request( socket, @work_piece, @work_offset )
+        (1..(( @fileio.getPieceLength / BLOCK_SIZE ) - 1)).each { |n| # fill the pipeline
+          send_request( socket, @work_piece, @work_offset + n*BLOCK_SIZE )
+        }
       end
       
       perc = (@fileio.getComplete.to_f / @fileio.getTotal.to_f) * 100
