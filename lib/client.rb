@@ -32,6 +32,7 @@ class Client
     tracker.setLeft(leftBytes)
     # we should also be opening a socket to listen
     # on some port
+    peer = Peer.new(tracker, fileio)
 
     # check here if we're done with the file
     if fileio.recheckComplete == "100."
@@ -49,7 +50,6 @@ class Client
       end
     else
       tracker.sendRequest("started")
-      peer = Peer.new(tracker, fileio)
       peer.connect(ARGV[1].to_i)
     end
     
