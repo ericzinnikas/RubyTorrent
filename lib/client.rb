@@ -22,12 +22,25 @@ class Client
     metainfo = Metainfo.new(@torrent_file)
     
     fileio = FileIO.new(metainfo.getInfo)
-    
+
     tracker = Tracker.new(metainfo)
     tracker.sendRequest("started")
+    # we should also be opening a socket to listen
+    # on some port
+
+    # check here if we're done with the file
+    if fileio.recheckComplete == "100."
+      puts "Starting as Seed." 
+      seedCon = TCPServer.new( 6889 ) #arbitrary port
+      loop do
+        client = seedCon.accept
+        peer.seed( client )
+      end
+    else
+      peer = Peer.new(tracker, fileio)
+      peer.connect(ARGV[1].to_i)
+    end
     
-    peer = Peer.new(tracker, fileio)
-    peer.connect(ARGV[1].to_i)
     # TODO: eventually for off here to other peers
     # TODO: Detect timeouts in each peer connection
     # and reattribute threads

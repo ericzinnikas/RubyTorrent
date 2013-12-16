@@ -43,6 +43,7 @@ class Peer
     @info_hash = tracker.getInfoHash
     @length = tracker.askMI.getLength
     @fileio = fileio
+    @tracker = tracker
     @pending_requests = Array.new
     @bitfield = Bitfield.new(fileio.getBitfield.get_num_of_bits)
   end
@@ -67,7 +68,8 @@ class Peer
         return false
       end
     
-      response = handshake(socket)
+      sendHandshake( socket )
+      response = getHandshake(socket)
 
     rescue Errno::ECONNREFUSED
       puts "Connection to #{@peers[peer][0]} refused."
@@ -107,21 +109,32 @@ class Peer
     
     socket.close 
   end
-  
-  # 'peer' argument is the index of the peer in the peers array.
-  def handshake(socket)
-    raw_data = [19, "BitTorrent protocol"] + Array.new(8, 0) << @info_hash << @local_peer_id
 
-    sel = IO.select([], [socket], [], 15);
+  def seed( socket )
+    puts "Starting seeding."
 
-    if sel.nil?
-      puts "Timed out waiting to write."
-      exit
+    response = getHandshake( socket )
+    if verifyHandshake( response )
+      sendHandshake( socket )
+
+      send_bitfield( socket )
+
+      loop {
+        if socket.eof?
+          puts "Connection closed by peer"
+          break
+        end
+
+        parseMessages( socket )
+
+      }
+    else
+      return false
     end
-    
-    socket.write(raw_data.pack("cA19c8A20A20"))
-    puts "Sent handshake"
 
+  end
+  
+  def getHandshake( socket )
     sel = IO.select([socket], [], [], 15);
 
     if sel.nil?
@@ -135,8 +148,6 @@ class Peer
       puts "Received null byte in handshake. Exiting."
       return false
     end
-    # Occasionally getting this error:
-    # /home/ericz/417-torrent/lib/peer.rb:127:in `handshake': undefined method `unpack' for nil:NilClass (NoMethodError)
     
     response = socket.read( 48 + pstrlen )
     puts "Got handshake"
@@ -144,6 +155,21 @@ class Peer
     response
   end
   
+  def sendHandshake(socket)
+    raw_data = [19, "BitTorrent protocol"] + Array.new(8, 0) << @info_hash << @local_peer_id
+
+    sel = IO.select([], [socket], [], 15);
+
+    if sel.nil?
+      puts "Timed out waiting to write."
+      exit
+    end
+    
+    socket.write(raw_data.pack("cA19c8A20A20"))
+    puts "Sent handshake"
+    true
+  end
+
   def verifyHandshake(handshake)
     # to unpack complete response with pstrlen prefix use "cA19c8A20A20" and index [10]
     (handshake.unpack("A19c8A20A20")[9] == @info_hash)
@@ -170,17 +196,27 @@ class Peer
     when 1
       # only send data messages when unchoked
       puts "Got unchoke message"
-      send_request( socket, @work_piece, @work_offset )
-      (1..(( @fileio.getPieceLength / BLOCK_SIZE ) - 1)).each { |n| # fill the pipeline
-        send_request( socket, @work_piece, @work_offset + n*BLOCK_SIZE )
-      }
+
+      if ! @fileio.isComplete?
+        send_request( socket, @work_piece, @work_offset )
+        (1..(( @fileio.getPieceLength / BLOCK_SIZE ) - 1)).each { |n| # fill the pipeline
+          send_request( socket, @work_piece, @work_offset + n*BLOCK_SIZE )
+        }
+      end
+
       @peer_choking = false
     when 2
       # only send data when peer is interested
       puts "Got interested message"
+
+      send_unchoke( socket )
+
       @peer_interested = true
     when 3
       puts "Got not interested message"
+
+      send_choke( socket )
+
       @peer_interested = false
     when 4
       puts "Got have message"
@@ -191,7 +227,7 @@ class Peer
       data = socket.read( len - 1 )
       @bitfield.set_bit(data.unpack("N")[0])
       #puts @bitfield.to_binary_string
-      if @work_piece.nil? && ! @peer_choking
+      if @work_piece.nil? && ! @peer_choking && ! @fileio.isComplete?
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
           @work_piece = needed_bits.sample
@@ -212,7 +248,7 @@ class Peer
       
 
       #select random piece to work on
-      if @work_piece.nil?
+      if @work_piece.nil? && ! @fileio.isComplete?
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
           @work_piece = needed_bits.sample
@@ -231,12 +267,21 @@ class Peer
 
     when 6
       puts "Got request message"
-      @pending_requests << socket.read(12).unpack("N3")
+      reqData = socket.read(12).unpack("N3")
+      @pending_requests << reqData
+      ## we  should just send pieces now? or use a queue
+
+      if ! @peer_choking && @peer_interested
+        send_piece( socket, reqData[0], reqData[1], reqData[2] )
+      end
     when 7
       puts "Got piece message"
       # Also, I don't think we need to synchronize access
       # to this with a mutex. Because peers will probably
       # be writing at separate times, right?
+      if @fileio.isComplete?
+        return
+      end
       
       piece_index, begin_offset = socket.read(8).unpack("N2")
       block_bytes = socket.read( len - 9 )
@@ -267,6 +312,8 @@ class Peer
         @fileio.setComplete(1)
         puts "Bit #{piece_index} set"
 
+        send_have( piece_index ) #also need to send this to all other peers
+
         # need to choose a new piece to work on
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
@@ -293,6 +340,7 @@ class Peer
           puts "File download complete!"
           # now exit
           # and trigger all other threads to exit
+          @tracker.sendRequest("completed")
           exit
         else
           puts "Recheck failed."
@@ -371,9 +419,10 @@ class Peer
     socket.write([13, 6, piece_index, begin_offset, req_len].pack("NcN3"))
   end
   
-  def send_piece(socket, piece_index, begin_offset)
+  def send_piece(socket, piece_index, begin_offset, block_length )
     puts "Sent piece message"
-    block_bytes = @fileio.get_piece_bytes(piece_index).byteslice(begin_offset, BLOCK_SIZE)
+    # lets use block size specified by peer..?
+    block_bytes = @fileio.get_piece_bytes(piece_index).byteslice(begin_offset, block_length )
 
     # don't use BLOCK_SIZE for <len> part of message, truncated blocks/pieces may be sent
     socket.write([9 + block_bytes.bytesize, 7, piece_index, begin_offset].pack("NcN2") + block_bytes)

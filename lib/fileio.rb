@@ -212,6 +212,10 @@ class FileIO
   def setComplete( n )
     @completePieces += n
   end
+
+  def isComplete?
+    @completePieces == @totalPieces
+  end
   
 end
 
