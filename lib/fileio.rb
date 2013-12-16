@@ -152,7 +152,7 @@ class FileIO
     num_bytes_written = chunk.bytesize
     @files[file_index][0].write(chunk)
     
-    byte_size = bytes.byte_size
+    byte_size = bytes.bytesize
     while num_bytes_written != byte_size
       file_index += 1
       @files[file_index][0].seek(0, IO::SEEK_SET)     

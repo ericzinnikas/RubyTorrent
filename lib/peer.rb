@@ -48,7 +48,7 @@ class Peer
   end
   
   def connect(peer)
-    puts "Starting connection"
+    puts "Starting connection with #{@peers[peer][0]}:#{@peers[peer][1]}"
     
     # for clean exit if no peers exist
     if @peers.empty?
@@ -156,6 +156,7 @@ class Peer
       @pending_requests = [] # choke discards all unanswered requests
     when 1
       puts "Got unchoke message"
+      send_request( socket, @work_piece, @work_offset )
       @peer_choking = false
     when 2
       puts "Got interested message"
@@ -172,7 +173,7 @@ class Peer
       data = socket.read( len - 1 )
       @bitfield.set_bit(data.unpack("N")[0])
       #puts @bitfield.to_binary_string
-      if @work_piece.nil?
+      if @work_piece.nil? && ! @peer_choking
         @work_piece = @fileio.getBitfield.bits_to_get( @bitfield ).sample
         @work_offset = 0
 
@@ -196,14 +197,14 @@ class Peer
 
         puts "Starting work on piece #{@work_piece}"
 
+        send_unchoke( socket );
+        send_interested( socket );
+
         # send request for first block
-        send_request( socket, @work_piece, @work_offset )
-        send_request( socket, @work_piece, @work_offset + BLOCK_SIZE )
-        send_request( socket, @work_piece, @work_offset + 2*BLOCK_SIZE )
-        send_request( socket, @work_piece, @work_offset + 3*BLOCK_SIZE )
+        # wait until unchoked to request
+        #send_request( socket, @work_piece, @work_offset )
       end
 
-      puts @bitfield.to_binary_string
     when 6
       puts "Got request message"
       @pending_requests << socket.read(12).unpack("N3")
@@ -222,15 +223,15 @@ class Peer
       piece_index, begin_offset = socket.read(8).unpack("N2")
       block_bytes = socket.read( len - 9 )
 
-      @lock.synchronize {
+      #@lock.synchronize {
 
       if @fileio.getBitfield.check_bit( piece_index )
         return
       end
       
-      set_piece_bytes(piece_index, begin_offset, block_bytes)
+      @fileio.set_piece_bytes(piece_index, begin_offset, block_bytes)
       
-      } # end synchronize
+      #} # end synchronize
 
       # after writing to file, we need to recheck this piece to see if it is now complete
       actualHash = info["pieces"].byteslice(piece_index * 20, 20)
@@ -247,6 +248,9 @@ class Peer
       else
         # piece not complete, request other blocks
         @work_offset += BLOCK_SIZE
+      end
+
+      if ! @peer_choking
         send_request( socket, @work_piece, @work_offset )
       end
 
