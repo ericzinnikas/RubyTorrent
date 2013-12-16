@@ -25,9 +25,15 @@ class Peer
   # peer's bitfield
   @bitfield = nil
   
-  @lock = Mutex.new
   # seems we only need to watch access
   # to the FileIO class (as that stores file state info)
+  @lock = Mutex.new
+  
+  # which piece are we trying to complete?
+  @work_piece = nil
+  # which block within this piece are we working on?
+  @work_offset = 0
+
   
   def initialize(tracker, fileio)
     @peers = tracker.getPeers # I think we should move this logic out to
@@ -159,6 +165,15 @@ class Peer
       data = socket.read( len - 1 )
       @bitfield.from_binary_data(data)
       #puts @bitfield.to_binary_string
+
+      #select random piece to work on
+      if @work_piece.nil?
+        @work_piece = @fileio.bits_to_get( @bitfield ).sample
+        @work_offset = 0
+
+        # send request for first block
+        send_request( socket, @work_piece, @work_offset )
+      end
     when 6
       puts "Got request message"
       @pending_requests << socket.read(12).unpack("N3")
@@ -195,7 +210,16 @@ class Peer
         @fileio.bitfield.set_bit(piece_index)
         @fileio.completePieces += 1
         puts "Bit #{piece_index} set"
+
+        # need to choose a new piece to work on
+        @work_piece = @fileio.bits_to_get( @bitfield ).sample
+        @work_offset = 0
+      else
+        # piece not complete, request other blocks
+        @work_offset += BLOCK_SIZE
+        send_request( socket, @work_piece, @work_offset )
       end
+
       perc = (@fileio.completePieces * 100) / (@fileio.totalPieces * 100) / 100
       if perc == 100
         if @fileio.recheckComplete() == 100
