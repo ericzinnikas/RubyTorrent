@@ -55,6 +55,15 @@ class Bitfield
     out.byteslice(0, @num_of_bits)
   end
   
+  def has_set_bits?
+    @bit_array.each { |byte|
+      if byte != 0
+        return true
+      end
+    }
+    false
+  end
+  
   def get_num_of_bits
     @num_of_bits
   end

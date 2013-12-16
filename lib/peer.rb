@@ -54,9 +54,18 @@ class Peer
     
     # ensure client is serving received info hash
     if verifyHandshake(response)
+      # send bitfield if we have any pieces (not required if we have none)
+      if @fileio.getBitfield.has_set_bits?
+        send_bitfield(socket)
+      end
+      
       loop {
+        if socket.eof? # peer has sent FIN, no more to read from socket
+          puts "Connection closed by peer"
+          break
+        end
+      
         parseMessages( socket )
-        #for debugging this won't exit..
       }
     else
       puts "Invalid infohash received in handshake"
@@ -178,45 +187,56 @@ class Peer
   end
   
   def send_keepalive(socket)
+    puts "Sent keep-alive message"
     socket.write([0].pack("N"))
   end
   
   def send_choke(socket)
+    puts "Sent choke message"
     @local_choking = true
     socket.write([1, 0].pack("Nc"))
   end
   
   def send_unchoke(socket)
+    puts "Sent unchoke message"
     @local_choking = false
     socket.write([1, 1].pack("Nc"))
   end
   
   def send_interested(socket)
+    puts "Sent interested message"
     @local_interested = true
     socket.write([1, 2].pack("Nc"))
   end
   
   def send_notinterested(socket)
+    puts "Sent not interested message"
     @local_interested = false
     socket.write([1, 3].pack("Nc"))
   end
   
   # piece_index is zero-based
   def send_have(piece_index)
+    puts "Sent have message"
     socket.write([5, 4, piece_index].pack("NcN"))
   end
   
+  # might want to implement lazy bitfield to ensure our bitfield messages
+  # aren't getting filtered by ISPs
   def send_bitfield(socket)
-    bitfield_length = (@fileio.getBitfield.num_of_bits + 7) / 8
+    puts "Sent bitfield message"
+    bitfield_length = (@fileio.getBitfield.get_num_of_bits + 7) / 8
     bitfield_data = @fileio.getBitfield.to_binary_data
     socket.write([(1 + bitfield_length), 5].pack("Nc") + bitfield_data)
   end
   
   def send_request(socket, piece_index, begin_offset)
+    puts "Sent request message"
     socket.write([13, 6, piece_index, begin_offset, BLOCK_SIZE].pack("NcN3"))
   end
   
   def send_piece(socket, piece_index, begin_offset)
+    puts "Sent piece message"
     block_bytes = @fileio.get_piece_bytes(piece_index).byteslice(begin_offset, BLOCK_SIZE)
 
     # don't use BLOCK_SIZE for <len> part of message, truncated blocks/pieces may be sent
@@ -224,11 +244,13 @@ class Peer
   end
   
   def send_cancel(socket, piece_index, begin_offset)
+    puts "Sent cancel message"
     socket.write([13, 8, piece_index, begin_offset, BLOCK_SIZE].pack("NcN3"))
   end
   
   # only needed with DHT
   def send_port(socket, listen_port)
+    puts "Sent port message"
     socket.write([3, 9, listen_port].pack("Ncn"))
   end
   
