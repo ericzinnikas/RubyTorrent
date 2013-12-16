@@ -74,63 +74,41 @@ class FileIO
     @bitfield = Bitfield.new( fieldSize )
     countLoaded = 0
     
-    bytes = nil
-    if info["files"].nil?
-      (0..@numBytes).step( @pieceLength ) { |n|
-        @piece_files << [0, n, 1]
-        
-        @files[0][0].seek( n, IO::SEEK_SET )
-        bytes = @files[0][0].read( @pieceLength )
-        if bytes.nil?
-          @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
-          next
-        end
-        pieceHash = Digest::SHA1.digest( bytes )
-        compHash = info["pieces"].byteslice( (n / @pieceLength) * 20, 20 )
-
-        if pieceHash == compHash
-          @bitfield.set_bit( n / @pieceLength )
-          countLoaded += 1
-        end
-
-        @files[0][0].seek( 0, IO::SEEK_SET ) #reset fh
-      }
-    else
-      (info["pieces"].bytesize / 20).times { |piece_index|     
-        piece_offset = piece_index * @pieceLength
-        file_index = nil
-        filelength_offset = 0
-        @files.each_with_index { |file, index|
-          if filelength_offset + file[1] > piece_offset
-            file_index = index
-            break
-          else
-            filelength_offset += file[1]
-          end
-        }
-        
-        @piece_files << [file_index, piece_offset - filelength_offset, 1]
-        
-        @files[file_index][0].seek(@piece_files[piece_index][1], IO::SEEK_SET)
-        bytes = @files[file_index][0].read(@pieceLength)
-        
-        while bytes.bytesize != @pieceLength && file_index + 1 < @files.length
-          file_index += 1
-          @piece_files[piece_index][2] += 1
-          @files[file_index][0].seek(0, IO::SEEK_SET)
-          bytes += @files[file_index][0].read(@pieceLength - bytes.bytesize)
-        end
-        
-        pieceHash = Digest::SHA1.digest( bytes )
-        compHash = info["pieces"].byteslice(piece_index * 20, 20)
-        
-        if pieceHash == compHash
-          @bitfield.set_bit(piece_index)
-          countLoaded += 1
-          #puts "Bit #{piece_index} set"
+    bytes = nil   
+    @totalPieces.times { |piece_index|     
+      piece_offset = piece_index * @pieceLength
+      file_index = nil
+      filelength_offset = 0
+      @files.each_with_index { |file, index|
+        if filelength_offset + file[1] > piece_offset
+          file_index = index
+          break
+        else
+          filelength_offset += file[1]
         end
       }
-    end
+      
+      @piece_files << [file_index, piece_offset - filelength_offset, 1]
+      
+      @files[file_index][0].seek(@piece_files[piece_index][1], IO::SEEK_SET)
+      bytes = @files[file_index][0].read(@pieceLength)
+      
+      while bytes.bytesize != @pieceLength && file_index + 1 < @files.length
+        file_index += 1
+        @piece_files[piece_index][2] += 1
+        @files[file_index][0].seek(0, IO::SEEK_SET)
+        bytes += @files[file_index][0].read(@pieceLength - bytes.bytesize)
+      end
+      
+      pieceHash = Digest::SHA1.digest( bytes )
+      compHash = info["pieces"].byteslice(piece_index * 20, 20)
+      
+      if pieceHash == compHash
+        @bitfield.set_bit(piece_index)
+        countLoaded += 1
+        #puts "Bit #{piece_index} set"
+      end
+    }
     @lastPieceLength = bytes.bytesize
     
     @completePieces = countLoaded
