@@ -287,7 +287,7 @@ class Peer
       
       perc = (@fileio.getComplete.to_f / @fileio.getTotal.to_f) * 100
       perc = perc.to_s.slice(0, 4)
-      if perc == 100
+      if perc == "100."
         if @fileio.recheckComplete() == 100
 
           puts "File download complete!"
