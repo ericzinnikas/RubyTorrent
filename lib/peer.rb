@@ -168,10 +168,12 @@ class Peer
       @peer_choking = true
       @pending_requests = [] # choke discards all unanswered requests
     when 1
+      # only send data messages when unchoked
       puts "Got unchoke message"
       send_request( socket, @work_piece, @work_offset )
       @peer_choking = false
     when 2
+      # only send data when peer is interested
       puts "Got interested message"
       @peer_interested = true
     when 3
@@ -223,22 +225,18 @@ class Peer
       @pending_requests << socket.read(12).unpack("N3")
     when 7
       puts "Got piece message"
-      # check to see if we already have this piece?
-      # technically, we should only get pieces we
-      # request, but it can't hurt
-      #
       # Also, I don't think we need to synchronize access
       # to this with a mutex. Because peers will probably
       # be writing at separate times, right?
-
-      # Better safe than sorry for now.
       
       piece_index, begin_offset = socket.read(8).unpack("N2")
       block_bytes = socket.read( len - 9 )
 
       #@lock.synchronize {
+      #for some reason there's a MethodNotFound exception here
 
       if @fileio.getBitfield.check_bit( piece_index )
+        # TODO choose a new piece to work on
         return
       end
       
