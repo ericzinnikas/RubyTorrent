@@ -19,9 +19,10 @@ class Client
   end
   
   def runClient
-    Dir.chdir(file) {
+    Dir.chdir(@torrent_directory) {
       Dir.glob("*.torrent") { |name|
         Thread.new {
+          puts "Loading #{name}"
           metainfo = Metainfo.new(name)
           
           fileio = FileIO.new(metainfo.getInfo)
