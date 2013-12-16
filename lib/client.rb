@@ -15,44 +15,48 @@ class Client
     require_relative "peer"
     require_relative "tracker"
     
-    @torrent_file = File.open(file, "r")
+    @torrent_directory = file
   end
   
   def runClient
-    metainfo = Metainfo.new(@torrent_file)
-    
-    fileio = FileIO.new(metainfo.getInfo)
+    Dir.chdir(file) {
+      Dir.glob("*.torrent") { |name|
+        Thread.new {
+          metainfo = Metainfo.new(name)
+          
+          fileio = FileIO.new(metainfo.getInfo)
 
-    tracker = Tracker.new(metainfo)
-    leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
-    if (fileio.getBitfield.check_bit(fileio.getTotal - 1) == 0)
-      leftBytes -= fileio.getPieceLength
-      leftBytes += fileio.getLastPieceLen
-    end
-    tracker.setLeft(leftBytes)
-    # we should also be opening a socket to listen
-    # on some port
+          tracker = Tracker.new(metainfo)
+          leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
+          if (fileio.getBitfield.check_bit(fileio.getTotal - 1) == 0)
+            leftBytes -= fileio.getPieceLength
+            leftBytes += fileio.getLastPieceLen
+          end
+          tracker.setLeft(leftBytes)
 
-    # check here if we're done with the file
-    if fileio.recheckComplete == "100."
-      puts "Starting as Seed." 
-      tracker.setLeft( 0 )
-      tracker.sendRequest("started")
-      peer = Peer.new(tracker, fileio)
-      seedCon = TCPServer.new( 6889 ) #arbitrary port
-      begin
-        loop do
-          client = seedCon.accept
-          peer.seed( client )
-        end
-      rescue Interrupt
-        tracker.sendRequest("stopped")
-      end
-    else
-      tracker.sendRequest("started")
-      peer = Peer.new(tracker, fileio)
-      peer.connect(ARGV[1].to_i)
-    end
+          # check here if we're done with the file
+          if fileio.recheckComplete == "100."
+            puts "Starting as Seed." 
+            tracker.setLeft( 0 )
+            tracker.sendRequest("started")
+            peer = Peer.new(tracker, fileio)
+            seedCon = TCPServer.new( 6889 ) #arbitrary port
+            begin
+              loop do
+                client = seedCon.accept
+                peer.seed( client )
+              end
+            rescue Interrupt
+              tracker.sendRequest("stopped")
+            end
+          else
+            tracker.sendRequest("started")
+            peer = Peer.new(tracker, fileio)
+            peer.connect(ARGV[1].to_i)
+          end
+        }
+      }
+    }
     
     # TODO: eventually for off here to other peers
     # TODO: Detect timeouts in each peer connection
