@@ -30,7 +30,9 @@ class Peer
   # to the FileIO class (as that stores file state info)
   
   def initialize(tracker, fileio)
-    @peers = tracker.getPeers
+    @peers = tracker.getPeers # I think we should move this logic out to
+                              # client. Then client can handle distributing
+                              # workers to specific peers.
     @local_peer_id = tracker.getPeerId
     @info_hash = tracker.getInfoHash
     @length = tracker.askMI.getLength
@@ -48,9 +50,30 @@ class Peer
       return
     end
     
-    socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
+    begin #Begin error handling.
+          #Only really need to worry about initial protocol setup, after
+          #that we shouldn't be seeing errors.
+
+      socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
     
-    response = handshake(socket)
+      response = handshake(socket)
+
+    rescue Errno::ECONNREFUSED
+      puts "Connection to #{@peers[peer][0]} refused."
+      return false
+    rescue Errno::ECONNRESET
+      puts "Connection to #{@peers[peer][0]} reset."
+      return false
+    rescue Errno::EHOSTUNREACH
+      puts "Connection to #{@peers[peer][0]} unreachable."
+      return false
+    rescue Errno::ENETUNREACH
+      puts "Connection to #{@peers[peer][0]} unreachable."
+      return false
+    rescue Errno::ETIMEDOUT
+      puts "Connection to #{@peers[peer][0]} timed out."
+      return false
+    end #End error handling.
     
     # ensure client is serving received info hash
     if verifyHandshake(response)

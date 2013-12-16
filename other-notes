@@ -1,0 +1,23 @@
+policy: until a piece is assembled, only download sub-pieces for that piece
+TCP pipelining: should have multiple pieces pending at once
+every time a sub-piece arrives, send new request
+
+connection start: select random piece and start 
+
+send have message: after 'piece' message
+if we get a have message: send request message if we don't have that piece
+on bitfield message, request random piece (block) we don't have
+
+
+logic: have all peer threads decide on 1 piece to download
+then each thread requests blocks inthat piece, move on once completed
+
+thread pool:
+20 threads
+initialize -> each thread connects to a peer
+distribute work -> client decides to work on 1 piece
+                -> peers each given 1 sub-piece (block) to work on
+                -> if their peer doesn't have it, return & wait
+                -> if they do, download it, then return & wait
+                -> returned threads continue getting subblocks
+                -> once piece is done, re-assign threads to new piece
