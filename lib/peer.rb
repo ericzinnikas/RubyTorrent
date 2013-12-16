@@ -227,6 +227,7 @@ class Peer
           puts "File download complete!"
           # now exit
           # and trigger all other threads to exit
+          exit
         else
           puts "Recheck failed."
         end
