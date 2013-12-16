@@ -42,6 +42,7 @@ class Tracker
 	def initialize(metainfo)
 		@mi = metainfo
 		#save the metainfo object in here, so we don't need to provide it again
+		@info_hash = Tracker.urlencode( Digest::SHA1.digest( @mi.getInfo.to_bencode ) ) #sha1 hash
 		@announce = @mi.getAnnounce
 		@uploaded = 0
 		@downloaded = 0
@@ -63,7 +64,6 @@ class Tracker
   # (for regular status updates to tracker)
 	def sendRequest(type)
 		# ask Lex/Bobby if we can use 3rd party sha1 lib (also url get request)
-		@info_hash = Tracker.urlencode( Digest::SHA1.digest( @mi.getInfo.to_bencode ) ) #sha1 hash
 
 		@peer_id = "-RR0001-"
 		# we need 12 random digits
