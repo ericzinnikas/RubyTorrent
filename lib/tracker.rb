@@ -61,6 +61,7 @@ class Tracker
 		uploaded = @uploaded
 		downloaded = @downloaded
 		left = @left
+    left = 0
 		compact = 1
 		event = type # started, stopped, completed
 		numwant = 50 #arbitrary
