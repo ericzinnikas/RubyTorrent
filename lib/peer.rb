@@ -192,13 +192,16 @@ class Peer
       @bitfield.set_bit(data.unpack("N")[0])
       #puts @bitfield.to_binary_string
       if @work_piece.nil? && ! @peer_choking
-        @work_piece = @fileio.getBitfield.bits_to_get( @bitfield ).sample
-        @work_offset = 0
+        needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
+        unless needed_bits.empty?
+          @work_piece = needed_bits.sample
+          @work_offset = 0
 
-        puts "Starting work on piece #{@work_piece}"
+          puts "Starting work on piece #{@work_piece}"
 
-        # send request for first block
-        send_request( socket, @work_piece, @work_offset )
+          # send request for first block
+          send_request( socket, @work_piece, @work_offset )
+        end
       end
     when 5
       puts "Got bitfield message"
@@ -210,17 +213,20 @@ class Peer
 
       #select random piece to work on
       if @work_piece.nil?
-        @work_piece = @fileio.getBitfield.bits_to_get( @bitfield ).sample
-        @work_offset = 0
+        needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
+        unless needed_bits.empty?
+          @work_piece = needed_bits.sample
+          @work_offset = 0
 
-        puts "Starting work on piece #{@work_piece}"
+          puts "Starting work on piece #{@work_piece}"
 
-        send_unchoke( socket );
-        send_interested( socket );
+          send_unchoke( socket );
+          send_interested( socket );
 
-        # send request for first block
-        # wait until unchoked to request
-        #send_request( socket, @work_piece, @work_offset )
+          # send request for first block
+          # wait until unchoked to request
+          #send_request( socket, @work_piece, @work_offset )
+        end
       end
 
     when 6

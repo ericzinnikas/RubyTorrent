@@ -131,8 +131,12 @@ class FileIO
     end
 
     @completePieces = countLoaded
+<<<<<<< HEAD
     perc = (@completePieces.to_f * 100) / ( @totalPieces.to_f * 100) * 100
     perc = perc.to_s.slice(0, 4)
+=======
+    perc = (@completePieces.to_f / @totalPieces.to_f) * 100
+>>>>>>> 614f8247a189636e7fe10cd5dddcd3a181bbff4a
     puts "Checked: #{perc}% complete file (#{@completePieces}/#{@totalPieces})."
     puts "Piece Length: #{@pieceLength}"
     perc
