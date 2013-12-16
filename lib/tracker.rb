@@ -91,17 +91,20 @@ class Tracker
 		@peers = response["peers"]
 
 		#parse peers into something usable
-		@peerSize = @peers.bytesize / 6
-		@peersNew = Array.new
-		@peerSize.times { |n|
-			ipOff = n*6
-			portOff = n*6 + 4
-			port = @peers.byteslice( portOff, 2 ).bytes
-			intPort = (port[0] << 8) | port[1]
-			@peersNew << [ IPAddr.new(@peers.byteslice( ipOff, 4 ).reverse.unpack("!L")[0], Socket::AF_INET).to_s, intPort ]
-		}
-
-		@peers = @peersNew
+    unless @peers.nil? || @peers.empty? # @peers.bytesize will throw error otherwise
+      @peerSize = @peers.bytesize / 6
+      @peersNew = Array.new
+      @peerSize.times { |n|
+        ipOff = n*6
+        portOff = n*6 + 4
+        port = @peers.byteslice( portOff, 2 ).bytes
+        intPort = (port[0] << 8) | port[1]
+        @peersNew << [ IPAddr.new(@peers.byteslice( ipOff, 4 ).reverse.unpack("!L")[0], Socket::AF_INET).to_s, intPort ]
+        @peers = @peersNew
+      }
+    else
+      @peers = [] # set to empty array (for nil case)
+    end
 
 		return true
 	end

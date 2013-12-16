@@ -36,7 +36,14 @@ class Peer
   end
   
   def connect(peer)
-    puts "Starting connection."
+    puts "Starting connection"
+    
+    # for clean exit if no peers exist
+    if @peers.empty?
+      puts "Aborting connection, no available peers"
+      return
+    end
+    
     socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
     
     response = handshake(socket)
