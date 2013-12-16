@@ -1,7 +1,7 @@
 # Handle incoming and outgoing communication with other peers
  require 'thread'
 
-module Torrent	
+module Torrent        
 
 class Peer
   # use 2^14 byte block size (16kb) for compatability with other clients
