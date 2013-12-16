@@ -160,7 +160,8 @@ class Peer
       @fileio.files[file_index][0].write(chunk)
       
       while num_bytes_written != recvd_size
-        @fileio.files[++file_index][0].seek(0, IO::SEEK_SET)     
+        file_index++
+        @fileio.files[file_index][0].seek(0, IO::SEEK_SET)     
         chunk = block_bytes.byteslice(num_bytes_written, @fileio.files[file_index][1])
         num_bytes_written += chunk.bytesize
         @fileio.files[file_index][0].write(chunk)
@@ -169,10 +170,14 @@ class Peer
       } # end synchronize
 
       # after writing to file, we need to recheck this piece to see if it is now complete
-      # something like:
-      # @fileio.rehash( piece_index )
-      # then rehash will compare the SHA1 in piece index w/the info["pieces"] string
-      # and take appropriate action
+      actualHash = info["pieces"].byteslice(piece_index * 20, 20)
+      pieceHash = @fileio.get_piece_hash(piece_index)
+      
+      if pieceHash == compHash
+        @bitfield.set_bit(piece_index)
+        countLoaded += 1
+        puts "Bit #{piece_index} set"
+      end
     when 8
       puts "Got cancel message"
       data = socket.read( len - 1 )
@@ -226,28 +231,8 @@ class Peer
   end
   
   def send_piece(socket, piece_index, begin_offset)
-    # might be a better way to cache piece/length offsets for multiple files
-    # Could build an array in FileIO that stores [[file, offset], ...] for each piece
-    piece_offset = piece_index * @fileio.pieceLength
-    file_index = nil
-    filelength_offset = 0
-    @fileio.files.each_with_index { |file, index|
-      if filelength_offset + file[1] > piece_offset + begin_offset
-        file_index = index
-        break
-      else
-        filelength_offset += file[1]
-      end
-    }
-    
-    @fileio.files[file_index][0].seek((piece_offset + begin_offset) - filelength_offset, IO::SEEK_SET)
-    block_bytes = @fileio.files[file_index][0].read(BLOCK_SIZE)
-    
-    while block_bytes.bytesize != BLOCK_SIZE && @fileio.files.length < ++file_index
-      @fileio.files[file_index][0].seek(0, IO::SEEK_SET)
-      block_bytes += @fileio.files[file_index][0].read(BLOCK_SIZE - block_bytes.bytesize)
-    end
-    
+    block_bytes = @fileio.get_piece_bytes(piece_index).byteslice(begin_offset, BLOCK_SIZE)
+
     # don't use BLOCK_SIZE for <len> part of message, truncated blocks/pieces may be sent
     socket.write([9 + block_bytes.bytesize, 7, piece_index, begin_offset].pack("NcN2") + block_bytes)
   end

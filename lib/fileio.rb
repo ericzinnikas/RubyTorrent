@@ -4,7 +4,12 @@ module Torrent
 
 class FileIO
   @info_dictionary = nil
+  
   @files = nil # [[File descriptor, length], ...] (may be only a single file)
+  @piece_files = nil # [[file_index, first_file_offset, num_files], ...]
+  # we know that after first file, offset in later files will always be 0 bytes, 
+  # so we only need to know the number of files a piece is stored across
+  
   @bitfield = nil
   @pieceLength = nil
   
@@ -12,6 +17,7 @@ class FileIO
   def initialize(info) 
     @info_dictionary = info
     @files = Array.new
+    @piece_files = Array.new
     @pieceLength = info["piece length"]
 
     numBytes = 0
@@ -51,7 +57,8 @@ class FileIO
       end
     end
     
-    # TO DO: Check which pieces are valid per the included hashes, set bits in bitfield
+    # check which pieces are valid per the included hashes, set bits in bitfield
+    # populate @piece_files array
     fieldSize = info["pieces"].length / 20
     @bitfield = Bitfield.new( fieldSize )
 
@@ -60,7 +67,8 @@ class FileIO
       countLoaded = 0
       (0..numBytes).step( @pieceLength ) { |n|
       # NEEDS TESTING
-
+        @piece_files << [0, n, 1]
+        
         @files[0][0].seek( n, IO::SEEK_SET )
         bytes = @files[0][0].read( @pieceLength )
         if bytes.nil?
@@ -85,7 +93,7 @@ class FileIO
       # NEEDS TESTING
       countLoaded = 0
       
-      (info["pieces"].bytesize / 20).times { |piece_index|
+      (info["pieces"].bytesize / 20).times { |piece_index|     
         piece_offset = piece_index * @pieceLength
         file_index = nil
         filelength_offset = 0
@@ -98,27 +106,46 @@ class FileIO
           end
         }
         
-        @files[file_index][0].seek(piece_offset - filelength_offset, IO::SEEK_SET)
-        block_bytes = @files[file_index][0].read(@pieceLength)
+        @piece_files << [file_index, piece_offset - filelength_offset, 1]
         
-        while block_bytes.bytesize != @pieceLength && @files.length < ++file_index
+        @files[file_index][0].seek(@piece_files[piece_index][1], IO::SEEK_SET)
+        bytes = @files[file_index][0].read(@pieceLength)
+        
+        while bytes.bytesize != @pieceLength && @files.length < ++file_index
+          @piece_files[piece_index][2] += 1
           @files[file_index][0].seek(0, IO::SEEK_SET)
-          block_bytes += @fileio.files[file_index][0].read(@pieceLength - block_bytes.bytesize)
+          bytes += @fileio.files[file_index][0].read(@pieceLength - bytes.bytesize)
         end
         
-        pieceHash = Digest::SHA1.digest( block_bytes )
-        compHash = info["pieces"].byteslice( (piece_index + piece_offset) * 20, 20 )
+        pieceHash = Digest::SHA1.digest( bytes )
+        compHash = info["pieces"].byteslice(piece_index * 20, 20)
         
         if pieceHash == compHash
           @bitfield.set_bit(piece_index)
           countLoaded += 1
-          puts "Bit #{piece_index + piece_offset} set"
+          puts "Bit #{piece_index} set"
         end
       }
-      
-      puts "Loaded #{(countLoaded*100 / ( numBytes / @pieceLength )*100) / 100}% complete file."
-      puts @bitfield.to_binary_string
     end
+    
+    puts "Loaded #{(countLoaded*100 / ( numBytes / @pieceLength )*100) / 100}% complete file."
+    puts @bitfield.to_binary_string
+  end
+  
+  def get_piece_bytes(piece_index)
+    file_index, first_file_offset, num_files = @piece_files[piece_index]
+    @files[file_index][0].seek(first_file_offset, IO::SEEK_SET)
+    bytes = @files[file_index][0].read(@pieceLength)
+    
+    while --num_files > 0
+      file_index++
+      @files[file_index][0].seek(0, IO::SEEK_SET)
+      bytes += @files[file_index][0].read(@pieceLength - bytes.bytesize)
+    end
+  end
+  
+  def get_piece_hash(piece_index)   
+    Digest::SHA1.digest(get_piece_bytes(piece_index))
   end
 
   def getBitfield
