@@ -40,7 +40,7 @@ class Tracker
 		@uploaded = 0
 		@downloaded = 0
 		@trackerid =  ""
-		@left = @mi.getInfo["length"]
+		@left = @mi.getLength
 		#we need to first determine if this is "single file" or
 		#"multiple file" mode, because there are differences
 	end
@@ -61,7 +61,6 @@ class Tracker
 		uploaded = @uploaded
 		downloaded = @downloaded
 		left = @left
-    left = 0
 		compact = 1
 		event = type # started, stopped, completed
 		numwant = 50 #arbitrary
