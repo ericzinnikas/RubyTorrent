@@ -59,6 +59,8 @@ class Tracker
     @mi #give access to the metainfo object
   end
 
+  # use type=nil to send request with event parameter omitted from GET request
+  # (for regular status updates to tracker)
 	def sendRequest(type)
 		# ask Lex/Bobby if we can use 3rd party sha1 lib (also url get request)
 		@info_hash = Tracker.urlencode( Digest::SHA1.digest( @mi.getInfo.to_bencode ) ) #sha1 hash
@@ -72,11 +74,18 @@ class Tracker
 		downloaded = @downloaded
 		left = @left
 		compact = 1
-		event = type # started, stopped, completed
+		event = type # started, stopped, completed, or nil to omit
 		numwant = 50 #arbitrary
 		trackerid = @trackerid #if we get a trackerid, put it here, otherwise nil or don't send
-
-		get = "?info_hash=#{@info_hash}&peer_id=#{@peer_id}&port=#{port.to_s}&uploaded=#{uploaded}&downloaded=#{downloaded}&left=#{left}&compact=#{compact}&event=#{event}&numwant=#{numwant}&trackerid=#{trackerid}"
+    
+    event_str = nil
+    if event.nil?
+      event_str = ""
+    else
+      event_str = "&event=#{event}"
+    end
+    
+		get = "?info_hash=#{@info_hash}&peer_id=#{@peer_id}&port=#{port.to_s}&uploaded=#{uploaded}&downloaded=#{downloaded}&left=#{left}&compact=#{compact}#{event_str}&numwant=#{numwant}&trackerid=#{trackerid}"
 
 		uri = URI( @announce + get )
 		req = Net::HTTP::Get.new(uri)
