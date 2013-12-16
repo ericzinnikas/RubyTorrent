@@ -45,6 +45,10 @@ class Tracker
 		#"multiple file" mode, because there are differences
 	end
 
+  def setLeft( n )
+    @left = n
+  end
+
   def askMI
     @mi #give access to the metainfo object
   end

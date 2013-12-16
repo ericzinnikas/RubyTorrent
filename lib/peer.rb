@@ -312,7 +312,7 @@ class Peer
         @fileio.setComplete(1)
         puts "Bit #{piece_index} set"
 
-        send_have( piece_index ) #also need to send this to all other peers
+        send_have( socket, piece_index ) #also need to send this to all other peers
 
         # need to choose a new piece to work on
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
@@ -391,7 +391,7 @@ class Peer
   end
   
   # piece_index is zero-based
-  def send_have(piece_index)
+  def send_have( socket, piece_index)
     puts "Sent have message"
     socket.write([5, 4, piece_index].pack("NcN"))
   end

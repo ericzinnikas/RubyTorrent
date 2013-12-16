@@ -31,6 +31,7 @@ class Client
     # check here if we're done with the file
     if fileio.recheckComplete == "100."
       puts "Starting as Seed." 
+      tracker.setLeft( 0 )
       seedCon = TCPServer.new( 6889 ) #arbitrary port
       loop do
         client = seedCon.accept
