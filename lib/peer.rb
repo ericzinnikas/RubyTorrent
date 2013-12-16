@@ -193,7 +193,7 @@ class Peer
       #puts @bitfield.to_binary_string
       if @work_piece.nil? && ! @peer_choking
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
-        unless needed_bits.empty?
+        unless needed_bits.empty? || peer_choking
           @work_piece = needed_bits.sample
           @work_offset = 0
 
@@ -219,10 +219,10 @@ class Peer
           @work_offset = 0
 
           puts "Starting work on piece #{@work_piece}"
-
+          
           send_unchoke( socket );
           send_interested( socket );
-
+          
           # send request for first block
           # wait until unchoked to request
           #send_request( socket, @work_piece, @work_offset )
@@ -247,9 +247,10 @@ class Peer
       if @fileio.getBitfield.check_bit( piece_index )
         # TODO choose a new piece to work on
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
-        unless needed_bits.empty?
-          @work_piece = needed_bits.sample
-          @work_offset = 0
+        unless needed_bits.empty? || peer_choking
+            @work_piece = needed_bits.sample
+            @work_offset = 0
+          end
         end
         return
       end
@@ -269,7 +270,7 @@ class Peer
 
         # need to choose a new piece to work on
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
-        unless needed_bits.empty?
+        unless needed_bits.empty? || peer_choking
           @work_piece = needed_bits.sample
           @work_offset = 0
         end
