@@ -127,6 +127,7 @@ class FileIO
     puts @bitfield.to_binary_string
   end
   
+  # untested
   def set_piece_bytes(piece_index, begin_offset, bytes)
     file_index, first_file_offset, num_files = @piece_files[piece_index]
     upper_filelength_offset = @files[file_index][1] - first_file_offset
@@ -152,6 +153,7 @@ class FileIO
     end
   end
   
+  # untested
   def get_piece_bytes(piece_index)
     file_index, first_file_offset, num_files = @piece_files[piece_index]
     @files[file_index][0].seek(first_file_offset, IO::SEEK_SET)
