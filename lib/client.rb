@@ -1,5 +1,7 @@
 # Handle the higher-level logic of downloading and seeding torrent files.
 
+require 'thread'
+
 module Torrent
 
 class Client
@@ -26,7 +28,49 @@ class Client
     
     peer = Peer.new(tracker, fileio)
     peer.connect(ARGV[1].to_i)
+    # TODO: eventually for off here to other peers
+    # TODO: Detect timeouts in each peer connection
+    # and reattribute threads
+    # Thread.new {
+    #   peer.connect(1)
+    # }
   end
+end
+
+class Workers
+
+  @size = nil
+  @work = nil
+  
+  def initialize(number)
+    @size = number
+    @work = Queue.new
+
+    @pool = Array.new( @size ) { |n|
+      Thread.new {
+        Thread.current[:id] = i #thread local var
+        catch( :exit ) { #can call a shutdown
+          loop {
+            job, argvs = @work.pop
+            job.call( *argvs )
+          }
+        }
+      }
+    }
+  end
+
+  def addWork( *argvs, &code )
+    @work << [code, argvs]
+  end
+
+  def quit
+    @size.times {
+      schedule { throw :exit }
+    }
+
+    @pool.map( &:join ) #wait for all to finish
+  end
+  
 end
 
 unless ARGV.length == 2
