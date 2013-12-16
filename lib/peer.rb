@@ -166,7 +166,7 @@ class Peer
       end
     when 8
       puts "Got cancel message"
-      data = socket.read( len - 1 )
+      @pending_requests.delete(socket.read(12).unpack("N3"))
     when 9
       # only needed with DHT
       puts "Got port message"
