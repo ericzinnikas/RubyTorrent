@@ -11,9 +11,15 @@ module Torrent
 
 class Tracker
 	@mi = nil
+  
+  @uploaded = nil
+  @downloaded = nil
+  @left = nil
+  
 	@interval = nil
 	@minInterval = nil
 	@trackerId = String.new
+  
 	@complete = nil
 	@incomplete = nil
 	@peers = String.new
@@ -124,6 +130,14 @@ class Tracker
 	def getPeerId
 		@peer_id
 	end
+  
+  def setDownloaded(downloaded)
+    @downloaded = downloaded
+  end
+  
+  def setUploaded(uploaded)
+    @uploaded = uploaded
+  end
 end
 
 end

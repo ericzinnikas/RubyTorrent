@@ -24,6 +24,12 @@ class Client
     fileio = FileIO.new(metainfo.getInfo)
 
     tracker = Tracker.new(metainfo)
+    leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
+    if (fileio.getBitfield.check_bit(fileio.getTotal - 1) == 0)
+      leftBytes -= fileio.getPieceLength
+      leftBytes += fileio.getLastPieceLen
+    end
+    tracker.setLeft(leftBytes)
     tracker.sendRequest("started")
     # we should also be opening a socket to listen
     # on some port
