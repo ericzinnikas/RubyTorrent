@@ -32,6 +32,8 @@ class Client
       dl_path = torrent_data["download-dir"]
       fh = File.new(file_path, "r")
       mi = Metainfo.new(fh)
+      tr = Tracker.new( metainfo )
+      tr.sendRequest("started") #need to announce our presence
       hashAssoc[mi.getInfoHash] = [file_path, dl_path]
     }
 
