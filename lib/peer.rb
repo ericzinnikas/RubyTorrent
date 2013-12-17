@@ -46,6 +46,7 @@ class Peer
     @tracker = tracker
     @pending_requests = Array.new
     @bitfield = Bitfield.new(fileio.getBitfield.get_num_of_bits)
+    srand
   end
   
   def connect(peer)
@@ -255,7 +256,7 @@ class Peer
       if @work_piece.nil? && ! @peer_choking && ! @fileio.isComplete?
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
-          @work_piece = needed_bits.sample(Random.new( Random.new_seed ) )
+          @work_piece = needed_bits.sample
           @work_offset = 0
 
           puts "Starting work on piece #{@work_piece}"
@@ -276,7 +277,7 @@ class Peer
       if @work_piece.nil? && ! @fileio.isComplete?
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
-          @work_piece = needed_bits.sample(Random.new( Random.new_seed) )
+          @work_piece = needed_bits.sample
           @work_offset = 0
 
           puts "Starting work on piece #{@work_piece}"
@@ -318,7 +319,7 @@ class Peer
         # TODO choose a new piece to work on
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
-          @work_piece = needed_bits.sample(Random.new( Random.new_seed) )
+          @work_piece = needed_bits.sample
           @work_offset = 0
         end
         return
@@ -342,7 +343,7 @@ class Peer
         # need to choose a new piece to work on
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
-          @work_piece = needed_bits.sample(Random.new( Random.new_seed) )
+          @work_piece = needed_bits.sample
           @work_offset = 0
         end
       else
