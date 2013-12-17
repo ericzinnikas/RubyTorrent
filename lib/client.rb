@@ -46,7 +46,6 @@ class Client
           Thread.start( seedCon.accept ) { |client|
             puts "Accepting client!"
             res = Peer.getHandshake( client )
-            res = Peer.getHandshake( client )
             puts "Recv handshake"
             recv_hash = res.unpack("A19c8A20A20")[9]
             recv_path = hashAssoc[recv_hash][0]

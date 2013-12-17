@@ -70,6 +70,7 @@ class Peer
       end
     
       sendHandshake( socket )
+      sendHandshake( socket )
       response = getHandshake(socket)
 
     rescue Errno::ECONNREFUSED
