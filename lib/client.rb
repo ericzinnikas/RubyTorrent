@@ -212,6 +212,7 @@ class Client
         torrent_cols.each { |torrent_col|
           out_string += get_columns_string(torrent_col, cols_width)
         }
+        out_string +=  row_splitter # add footer
         
         STDOUT.write "\e[2J\e[f" + out_string # 1st part clears screen, portable?
       }
