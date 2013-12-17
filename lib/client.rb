@@ -244,12 +244,13 @@ class Client
         choice = STDIN.gets
         STDOUT.write "Stopping #{choice}"
         sList.each { |t|
-          if t["torrent-file"] == "#{choice.to_i}: " + torrent_cols[choice.to_i][0][0]
+          if "#{choice.to_i}: " + t["torrent-file"] == "#{choice.to_i}: " + torrent_cols[choice.to_i][0][0]
             t["stopNow"] = true
           end
         }
+        sleep 1
         tList.each { |t|
-          if t["torrent-file"] == "#{choice.to_i}: " + torrent_cols[choice.to_i][0][0]
+          if "#{choice.to_i}: " + t["torrent-file"] == torrent_cols[choice.to_i][0][0]
             t["stopNow"] = true
           end
         }
