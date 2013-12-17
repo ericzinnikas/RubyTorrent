@@ -179,7 +179,7 @@ class Client
         cols_width = `/usr/bin/env tput cols`.to_i
         rows_height = `/usr/bin/env tput lines`.to_i
         
-        row_splitter = ("-" * cols_width) + "\n"
+        row_splitter = ("=" * cols_width) + "\n"
         
         # cols = [["Column name", col_width], ...]
         label_cols = Array.new
@@ -207,6 +207,7 @@ class Client
         
         STDOUT.write "\e[2J\e[f" # clears screen. portable?
         STDOUT.write out_string
+        STDOUT.write get_percentage_bar(0.73205, 80)
       }
     rescue Interrupt
       puts "\n\nCaught Interrupt. Exiting."
@@ -234,13 +235,25 @@ class Client
     line += "|"
     cols.each { |col|
       col_label = col[0].slice(0, col[1])
-      space_width = col[1] - col[0].length
+      space_width = 0
+      if col[1] > col[0].length
+        space_width = col[1] - col[0].length
+      end
       line += " " * (space_width / 2)
       line += col_label
-      line += " " * (space_width - (space_width / 2)) # account for odd space widths
+      line += " " * (space_width - (space_width / 2)) # accounts for odd space widths
       line += "|"
     }
     line.slice(0, width) + "\n"
+  end
+  
+  # percent is in the range [0, 1]
+  # bar_width is the total number of characters the bar occupies (must be >= 2)
+  def get_percentage_bar(percent, bar_width)
+    inner_width = bar_width - 2
+    complete_num = (inner_width * percent).to_i
+    incomplete_num = inner_width - complete_num # accounts for any truncation
+    "[" + ("#" * complete_num) + ("-" * incomplete_num) + "]"
   end
 end
 
