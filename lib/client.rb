@@ -30,7 +30,7 @@ class Client
         t_name = torrent_data["torrent-file"]
         tList << Thread.new {
           puts "Loading #{t_name}"
-          fh = File.new(dir_path + t_name, "r")
+          fh = File.new(dir_path + File::SEPARATOR + t_name, "r")
           metainfo = Metainfo.new(fh)
           
           fileio = FileIO.new(metainfo.getInfo)

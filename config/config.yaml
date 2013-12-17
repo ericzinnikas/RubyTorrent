@@ -1,4 +1,4 @@
 torrent0:
    torrent-file: samplepictures.torrent
-   file-dir: torrents/
-   download-dir: downloads/
+   file-dir: torrents
+   download-dir: downloads
