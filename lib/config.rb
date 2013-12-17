@@ -20,6 +20,14 @@ class SessionConfig
   def getTorrents
     @torrents
   end
+  
+  # info: [torrent-file, file-dir, download-dir]
+  def add_torrent(info)
+    hash = { "torrent-file"=>info[0], "file-dir"=>info[1], "download-dir"=>info[2] }
+    @torrents["torrent#{@torrents.length}"] = hash
+    @file_descriptor.seek(0, IO::SEEK_SET)
+    @file_descriptor.write(@torrents.to_yaml)
+  end
 end
 
 end
