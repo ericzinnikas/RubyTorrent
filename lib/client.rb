@@ -189,18 +189,24 @@ class Client
         
         # cols = [["Column name", col_width], ...]
         label_cols = Array.new
-        label_cols << ["Torrent Name", 40]
-        label_cols << ["Seeds", 6]
-        label_cols << ["Peers", 6]
-        label_cols << ["Progress", 23]
+        label_cols << ["Torrent Name", 0.5]
+        label_cols << ["Seeds", 0.0875]
+        label_cols << ["Peers", 0.0875]
+        label_cols << ["Progress", 0.325]
         
         torrent_cols = Array.new
         torrents.each { |torrent, data|
+          # generate perentage bar
+          num_spacers = label_cols.length + 1
+          percentage_width = label_cols[3][1] * (cols_width - num_spacers)
+          percentage_bar = get_percentage_bar(data[2], percentage_width)
+          
+          # populate torrent info row
           curr_col = Array.new
           curr_col << [torrent, label_cols[0][1]]
           curr_col << [data[0].to_s, label_cols[1][1]]
           curr_col << [data[1].to_s, label_cols[2][1]]
-          curr_col << [get_percentage_bar(data[2], label_cols[3][1]), label_cols[3][1]]
+          curr_col << [percentage_bar, label_cols[3][1]]
           torrent_cols << curr_col
         }
         
@@ -247,17 +253,25 @@ class Client
   def get_columns_string(cols, width)
     line = String.new
     line += "|"
+    content_width = width - (cols.length + 1) # accounts for vertical spacers
     cols.each { |col|
-      col_label = col[0].slice(0, col[1])
+      col_width = content_width * col[1]
+      col_label = col[0].slice(0, col_width)
       space_width = 0
-      if col[1] > col[0].length
-        space_width = col[1] - col[0].length
+      if col_width > col[0].length
+        space_width = col_width - col[0].length
       end
       line += " " * (space_width / 2)
       line += col_label
       line += " " * (space_width - (space_width / 2)) # accounts for odd space widths
       line += "|"
     }
+    # accounts for truncation variations to ensure consistent row length
+    if line.length <= width 
+      line[line.length - 1] = " "
+      line += " " * (width - line.length)
+      line[line.length - 1] = "|"
+    end
     line.slice(0, width) + "\n"
   end
   
