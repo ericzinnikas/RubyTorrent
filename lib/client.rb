@@ -229,8 +229,32 @@ class Client
       #seeding.
       #or pause/unpause a torrent, etc.
       #then throw them back into the loop
+      
+
+      STDOUT.write "\nChoose from the following actions:\n\t(s)top | s(t)art | (r)ehash | (q)uit \nChoice: "
+      choice = STDIN.gets
+
+      case choice
+      when "s\n"
+        STDOUT.write "Select torrent: "
+        choice = STDIN.gets
+        STDOUT.write "Stopping #{choice}"
+        retry
+      when "t\n"
+        STDOUT.write "Select torrent: "
+        choice = STDIN.gets
+        STDOUT.write "Starting #{choice}"
+        retry
+      when "r\n"
+        STDOUT.write "Select torrent: "
+        choice = STDIN.gets
+        STDOUT.write "Rehashing #{choice}"
+        retry
+      when "q\n"
+        exit  
+      end
+
         
-      puts "\n\nCaught Interrupt. Exiting."
       sList.each { |t|
         #t.join
       }
