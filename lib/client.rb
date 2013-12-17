@@ -60,6 +60,7 @@ class Client
               leftBytes += fileio.getLastPieceLen
             end
             tracker.setLeft(leftBytes)
+            puts "#{leftBytes}"
             tracker.sendRequest("started") 
 
             peer = Peer.new( tracker, fileio )
@@ -98,16 +99,18 @@ class Client
         numSpawn = tracker.getPeers.length
       end
 
-      begin
-        (0..numSpawn).each { |n|
-          tList << Thread.new {
-            peer = Peer.new(tracker, fileio)
-            peer.connect(n)
+      if leftBytes != 0
+        begin
+          (0..numSpawn).each { |n|
+            tList << Thread.new {
+              peer = Peer.new(tracker, fileio)
+              peer.connect(n)
+            }
           }
-        }
-      rescue Interrupt
-        puts "Stopping peer."
-        tracker.sendRequest("stopped")
+        rescue Interrupt
+          puts "Stopping peer."
+          tracker.sendRequest("stopped")
+        end
       end
     }
 

@@ -129,6 +129,7 @@ class Tracker
 	end
 
 	def getPeers
+    puts "#{@peers}"
 		@peers
 	end
 
