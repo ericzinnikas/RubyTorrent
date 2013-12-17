@@ -46,6 +46,7 @@ class Client
       tr = Tracker.new( mi )
       tr.sendRequest("started") #need to announce our presence
       hashAssoc[mi.getInfoHash] = [file_path, dl_path, torrent_data["download-dir"]]
+      puts "Seeding #{torrent_data["torrent-file"]}"
     }
 
     sList = Array.new
@@ -106,7 +107,6 @@ class Client
         dir_path = ""
       end
       t_name = torrent_data["torrent-file"]
-      puts "Loading #{t_name}"
       fh = File.new(Dir.pwd + "/" + dir_path + File::SEPARATOR + t_name, "r")
       metainfo = Metainfo.new(fh)
       
