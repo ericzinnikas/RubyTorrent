@@ -66,7 +66,9 @@ class FileIO
       @files << [File.open(prefix_dir + info["name"], File::RDWR | File::CREAT), info["length"]]
       if @files.last[0].size < @files.last[1]
         @files.last[0].seek(@files.last[0].size, IO::SEEK_SET)
-        @files.last[0].write("\0" * (@files.last[1] - @files.last[0].size))
+        (0..(@files.last[1] - @files.last[0].size)).each {
+          @files.last[0].write("\0")
+        }
       end
     end
 
