@@ -28,10 +28,11 @@ class Client
       if dir_path.nil?
         dir_path = ""
       end
-      path = Dir.pwd + "/" + dir_path + "/" + torrent_data["torrent-file"]
-      fh = File.new(path, "r")
+      file_path = Dir.pwd + "/" + dir_path + "/" + torrent_data["torrent-file"]
+      dl_path = torrent_data["download-dir"]
+      fh = File.new(file_path, "r")
       mi = Metainfo.new(fh)
-      hashAssoc[mi.getInfoHash] = path
+      hashAssoc[mi.getInfoHash] = [file_path, dl_path]
     }
 
     seedThread = Thread.new {
@@ -43,14 +44,14 @@ class Client
           Thread.start( seedCon.accept ) { |client|
             res = Peer.getHandshake( client )
             recv_hash = res.unpack("A19c8A20A20")[9]
-            recv_path = hashAssoc[recv_hash]
+            recv_path = hashAssoc[recv_hash][0]
             if recv_path.nil?
               exit
             end
             fh = File.new( recv_path, "r")
             
             metainfo = Metainfo.new(fh)
-            fileio = FileIO.new( metainfo.getInfo )
+            fileio = FileIO.new( metainfo.getInfo, hashAssoc[recv_hash][1] )
             tracker = Tracker.new( metainfo )  
 
             leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
@@ -82,7 +83,7 @@ class Client
       fh = File.new(Dir.pwd + "/" + dir_path + File::SEPARATOR + t_name, "r")
       metainfo = Metainfo.new(fh)
       
-      fileio = FileIO.new(metainfo.getInfo)
+      fileio = FileIO.new(metainfo.getInfo, torrent_data["download-dir"])
       tracker = Tracker.new(metainfo)
       leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
       if (fileio.getBitfield.check_bit(fileio.getTotal - 1) == 0)

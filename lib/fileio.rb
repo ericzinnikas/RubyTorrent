@@ -17,8 +17,9 @@ class FileIO
   @completePieces = 0
   @totalPieces = nil
   
-  # accepts the info hash from metainfo
-  def initialize(info) 
+  # accepts the info hash from metainfo. prefix_dir is the directory  
+  # (i.e. download directory, etc.) for torrent files and their directories.
+  def initialize(info, prefix_dir) 
     @info_dictionary = info
     @files = Array.new
     @piece_files = Array.new
@@ -26,18 +27,26 @@ class FileIO
     @numBytes = 0
     @totalPieces = info["pieces"].bytesize / 20
     
+    unless Dir.exists?(prefix_dir)
+        Dir.mkdir(prefix_dir)
+      end
+    
+    unless prefix_dir.chars.last == File::SEPARATOR 
+      prefix_dir += File::SEPARATOR 
+    end
+    
     if info["files"] != nil
       # multiple file mode
       
-      unless Dir.exists?(info["name"])
-        Dir.mkdir(info["name"])
+      unless Dir.exists?(prefix_dir + info["name"])
+        Dir.mkdir(prefix_dir + info["name"])
       end
       
       info["files"].each { |file|
         @numBytes += file["length"]
         filename = file["path"].last
         
-        build_dir = info["name"] + File::SEPARATOR # for making directory trees
+        build_dir = prefix_dir + info["name"] + File::SEPARATOR # for making directory trees
         file["path"].rotate(-1).drop(1).each { |dir| # don't use filename (last element)
           build_dir += (dir + File::SEPARATOR) # use constant separator for portability
           unless Dir.exists?(build_dir)
@@ -54,7 +63,7 @@ class FileIO
     else
       # single file mode
       @numBytes = info["length"] 
-      @files << [File.open(info["name"], File::RDWR | File::CREAT), info["length"]]
+      @files << [File.open(prefix_dir + info["name"], File::RDWR | File::CREAT), info["length"]]
       if @files.last[0].size < @files.last[1]
         @files.last[0].seek(@files.last[0].size, IO::SEEK_SET)
         @files.last[0].write("\0" * (@files.last[1] - @files.last[0].size))
