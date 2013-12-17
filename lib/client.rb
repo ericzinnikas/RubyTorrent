@@ -44,10 +44,12 @@ class Client
       begin
         loop do
           Thread.start( seedCon.accept ) { |client|
+            puts "Accepting client!"
             res = Peer.getHandshake( client )
             recv_hash = res.unpack("A19c8A20A20")[9]
             recv_path = hashAssoc[recv_hash][0]
             if recv_path.nil?
+              puts "Bad path."
               exit
             end
             fh = File.new( recv_path, "r")
@@ -61,11 +63,12 @@ class Client
               leftBytes -= fileio.getPieceLength
               leftBytes += fileio.getLastPieceLen
             end
+
             tracker.setLeft(leftBytes)
-            puts "#{leftBytes}"
             tracker.sendRequest("started") 
 
             peer = Peer.new( tracker, fileio )
+            puts "Seeding!"
             peer.seed( client )
           }
         end
