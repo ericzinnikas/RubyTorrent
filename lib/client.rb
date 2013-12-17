@@ -194,6 +194,7 @@ class Client
           curr_col << [torrent, label_cols[0][1]]
           curr_col << [data[0].to_s, label_cols[1][1]]
           curr_col << [data[1].to_s, label_cols[2][1]]
+          curr_col << [get_percentage_bar(0.5, label_cols[3][1]), label_cols[3][1]]
           torrent_cols << curr_col
         }
         
