@@ -139,7 +139,7 @@ class Peer
 
     if sel.nil?
       puts "Timed out waiting to read."
-      exit
+      return false
     end
 
     begin
