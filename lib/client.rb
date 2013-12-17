@@ -151,6 +151,7 @@ class Client
       end
     }
 
+    torrent_cols = Array.new
     begin
       updateDelay( 1 ) {
         # torrents = ["torrent name" => [seed_num, peer_num], ...]
@@ -243,12 +244,12 @@ class Client
         choice = STDIN.gets
         STDOUT.write "Stopping #{choice}"
         sList.each { |t|
-          if t["torrent-file"] == "#{choice}: " + torrent_cols[choice][0][0]
+          if t["torrent-file"] == "#{choice.to_i}: " + torrent_cols[choice.to_i][0][0]
             t["stopNow"] = true
           end
         }
         tList.each { |t|
-          if t["torrent-file"] == "#{choice}: " + torrent_cols[choice][0][0]
+          if t["torrent-file"] == "#{choice.to_i}: " + torrent_cols[choice.to_i][0][0]
             t["stopNow"] = true
           end
         }

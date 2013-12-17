@@ -381,6 +381,10 @@ class Peer
       if @fileio.isComplete?
         return
       end
+
+      if Thread.current["stopNow"] == true
+        return
+      end
       
       piece_index, begin_offset = socket.read(8).unpack("N2")
       block_bytes = socket.read( len - 9 )
