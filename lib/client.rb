@@ -37,13 +37,15 @@ class Client
       hashAssoc[mi.getInfoHash] = [file_path, dl_path, torrent_data["download-dir"]]
     }
 
+    sList = Array.new
     seedThread = Thread.new {
       seedCon = TCPServer.new( 6889 )
       puts "Server started."
       tracker = nil
       begin
         loop do
-          Thread.start( seedCon.accept ) { |client|
+          sList << Thread.start( seedCon.accept ) { |client|
+            client.puts "OKAY HI"
             puts "Accepting client!"
             res = Peer.getHandshake( client )
             puts "Recv handshake"
@@ -121,6 +123,9 @@ class Client
     }
 
     tList.each { |t|
+      t.join
+    }
+    sList.each { |t|
       t.join
     }
     seedThread.join
