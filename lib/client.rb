@@ -149,7 +149,11 @@ class Client
 
         tList.each { |t|
           if t["peer"] == true
-            peers += 1
+            if t["nowSeed"] == true
+              seeds += 1
+            else
+              peers += 1
+            end
           end
         }
 
