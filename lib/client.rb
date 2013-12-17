@@ -275,7 +275,7 @@ class Client
           end
         }
         Thread.new {
-          Client.runClient( torrent_cols[choice.to_i][0][0].slice(3, torrent_cols[choice.to_i][0][0].length) )
+          self.runClient( torrent_cols[choice.to_i][0][0].slice(3, torrent_cols[choice.to_i][0][0].length).to_s )
         }
         retry
       when "r\n"
