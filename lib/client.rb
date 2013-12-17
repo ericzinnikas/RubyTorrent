@@ -30,91 +30,97 @@ class Client
     end
   end
   
-  def runClient
+  def runClient( whichTorrent )
 
     hashAssoc = Hash.new
 
-    @config.getTorrents.each { |i, torrent_data|
-      dir_path = torrent_data["file-dir"]
-      if dir_path.nil?
-        dir_path = ""
-      end
-      unless Dir.exists?(dir_path)
-        puts "Invalid file path provided, exiting"
-        exit
-      end
-      file_path = Dir.pwd + "/" + dir_path + "/" + torrent_data["torrent-file"]
-      dl_path = torrent_data["download-dir"]
-      fh = File.new(file_path, "r")
-      mi = Metainfo.new(fh)
-      tr = Tracker.new( mi )
-      tr.sendRequest("started") #need to announce our presence
-      hashAssoc[mi.getInfoHash] = [file_path, dl_path, torrent_data["download-dir"]]
-      if $verb
-        puts "Seeding #{torrent_data["torrent-file"]}"
-      end
-    }
-
-    sList = Array.new
-    seedThread = Thread.new {
-      seedCon = TCPServer.new( 6889 )
-      tracker = nil
-      begin
-        loop do
-          sList << Thread.start( seedCon.accept ) { |client|
-            client_con = Socket.unpack_sockaddr_in(client.getpeername)
-            res = Peer.getHandshake( client )
-            recv_hash = res.unpack("A19c8A20A20")[9]
-            recv_path = hashAssoc[recv_hash][0]
-            if recv_path.nil?
-              puts "Bad path."
-              exit
-            end
-            if $verb
-              puts "\nSeeding to client #{client_con[1]}:#{client_con[0]}"
-            end
-            
-            Thread.current["torrent-file"] = hashAssoc[recv_hash][0].split("/").last
-            
-            fh = File.new( recv_path, "r")
-            metainfo = Metainfo.new(fh)
-            fileio = FileIO.new( metainfo.getInfo, hashAssoc[recv_hash][2] )
-            tracker = Tracker.new( metainfo )  
-
-            leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
-            if (fileio.getBitfield.check_bit(fileio.getTotal - 1) == 0)
-              leftBytes -= fileio.getPieceLength
-              leftBytes += fileio.getLastPieceLen
-            end
-
-            tracker.setLeft(leftBytes)
-            tracker.sendRequest("started") 
-
-            Thread.current["seed"] = true
-            peer = Peer.new( tracker, fileio )
-            if $verb
-              puts "Seeding!"
-            end
-            peer.seed( client )
-            Thread.current["seed"] = false
-            if $verb
-              puts "\nClient #{client_con[1]}:#{client_con[0]} disconnected."
-            end
-          }
+    if whichTorrent.nil?
+      @config.getTorrents.each { |i, torrent_data|
+        dir_path = torrent_data["file-dir"]
+        if dir_path.nil?
+          dir_path = ""
         end
-      rescue Interrupt
-        puts "\nStopping seed."
-        tracker.sendRequest("stopped")
-      end 
-    }
+        unless Dir.exists?(dir_path)
+          puts "Invalid file path provided, exiting"
+          exit
+        end
+        file_path = Dir.pwd + "/" + dir_path + "/" + torrent_data["torrent-file"]
+        dl_path = torrent_data["download-dir"]
+        fh = File.new(file_path, "r")
+        mi = Metainfo.new(fh)
+        tr = Tracker.new( mi )
+        tr.sendRequest("started") #need to announce our presence
+        hashAssoc[mi.getInfoHash] = [file_path, dl_path, torrent_data["download-dir"]]
+        if $verb
+          puts "Seeding #{torrent_data["torrent-file"]}"
+        end
+      }
+
+      sList = Array.new
+      seedThread = Thread.new {
+        seedCon = TCPServer.new( 6889 )
+        tracker = nil
+        begin
+          loop do
+            sList << Thread.start( seedCon.accept ) { |client|
+              client_con = Socket.unpack_sockaddr_in(client.getpeername)
+              res = Peer.getHandshake( client )
+              recv_hash = res.unpack("A19c8A20A20")[9]
+              recv_path = hashAssoc[recv_hash][0]
+              if recv_path.nil?
+                puts "Bad path."
+                exit
+              end
+              if $verb
+                puts "\nSeeding to client #{client_con[1]}:#{client_con[0]}"
+              end
+              
+              Thread.current["torrent-file"] = hashAssoc[recv_hash][0].split("/").last
+              
+              fh = File.new( recv_path, "r")
+              metainfo = Metainfo.new(fh)
+              fileio = FileIO.new( metainfo.getInfo, hashAssoc[recv_hash][2] )
+              tracker = Tracker.new( metainfo )  
+
+              leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
+              if (fileio.getBitfield.check_bit(fileio.getTotal - 1) == 0)
+                leftBytes -= fileio.getPieceLength
+                leftBytes += fileio.getLastPieceLen
+              end
+
+              tracker.setLeft(leftBytes)
+              tracker.sendRequest("started") 
+
+              Thread.current["seed"] = true
+              peer = Peer.new( tracker, fileio )
+              if $verb
+                puts "Seeding!"
+              end
+              peer.seed( client )
+              Thread.current["seed"] = false
+              if $verb
+                puts "\nClient #{client_con[1]}:#{client_con[0]} disconnected."
+              end
+            }
+          end
+        rescue Interrupt
+          puts "\nStopping seed."
+          tracker.sendRequest("stopped")
+        end 
+      }
+    end
     
     tList = Array.new
     @config.getTorrents.each { |i, torrent_data|
+      t_name = torrent_data["torrent-file"]
+      if ! whichTorrent.nil? && t_name != whichTorrent
+        #only start the one we want
+        next
+      end
       dir_path = torrent_data["file-dir"]
       if dir_path.nil?
         dir_path = ""
       end
-      t_name = torrent_data["torrent-file"]
       fh = File.new(Dir.pwd + "/" + dir_path + File::SEPARATOR + t_name, "r")
       metainfo = Metainfo.new(fh)
       
@@ -242,13 +248,12 @@ class Client
       when "s\n"
         STDOUT.write "Select torrent: "
         choice = STDIN.gets
-        STDOUT.write "Stopping #{choice}"
+        STDOUT.write "Stopping #{torrent_cols[choice.to_i][0][0]}"
         sList.each { |t|
           if "#{choice.to_i}: " + t["torrent-file"] == "#{choice.to_i}: " + torrent_cols[choice.to_i][0][0]
             t["stopNow"] = true
           end
         }
-        sleep 1
         tList.each { |t|
           if "#{choice.to_i}: " + t["torrent-file"] == torrent_cols[choice.to_i][0][0]
             t["stopNow"] = true
@@ -258,7 +263,20 @@ class Client
       when "t\n"
         STDOUT.write "Select torrent: "
         choice = STDIN.gets
-        STDOUT.write "Starting #{choice}"
+        STDOUT.write "Starting #{torrent_cols[choice.to_i][0][0]}"
+        sList.each { |t|
+          if "#{choice.to_i}: " + t["torrent-file"] == "#{choice.to_i}: " + torrent_cols[choice.to_i][0][0]
+            t["stopNow"] = false
+          end
+        }
+        tList.each { |t|
+          if "#{choice.to_i}: " + t["torrent-file"] == torrent_cols[choice.to_i][0][0]
+            t["stopNow"] = false
+          end
+        }
+        Thread.new {
+          Client.runClient( torrent_cols[choice.to_i][0][0].slice(3, torrent_cols[choice.to_i][0][0].length) )
+        }
         retry
       when "r\n"
         STDOUT.write "Select torrent: "
@@ -372,6 +390,6 @@ end
 config = SessionConfig.new("config/config.yaml") 
 
 client = Client.new(config)
-client.runClient
+client.runClient(nil)
 
 end
