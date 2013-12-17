@@ -107,7 +107,7 @@ class Client
           numSpawn = tracker.getPeers.length
         end
         begin
-          (0..numSpawn).each { |n|
+          (0..numSpawn - 1).each { |n|
             tList << Thread.new {
               peer = Peer.new(tracker, fileio)
               peer.connect(n)
