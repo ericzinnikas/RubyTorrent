@@ -94,14 +94,14 @@ class Client
         leftBytes += fileio.getLastPieceLen
       end
       tracker.setLeft(leftBytes)
-      tracker.sendRequest("started")
 
-      numSpawn = 5
-      if tracker.getPeers.length < 5
-        numSpawn = tracker.getPeers.length
-      end
 
       if leftBytes != 0
+        tracker.sendRequest("started")
+        numSpawn = 5
+        if tracker.getPeers.length < 5
+          numSpawn = tracker.getPeers.length
+        end
         begin
           (0..numSpawn).each { |n|
             tList << Thread.new {
