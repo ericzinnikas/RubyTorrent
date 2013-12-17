@@ -36,6 +36,7 @@ class Client
 
     seedThread = Thread.new {
       seedCon = TCPServer.new( 6889 )
+      puts "Server started."
       tracker = nil
       begin
         loop do
@@ -92,8 +93,8 @@ class Client
       tracker.sendRequest("started")
 
       numSpawn = 5
-      if tracker.getPeers < 5
-        numSpawn = tracker.getPeers
+      if tracker.getPeers.length < 5
+        numSpawn = tracker.getPeers.length
       end
 
       begin
@@ -160,7 +161,7 @@ class Workers
 end
 
 unless ARGV.length == 1
-  abort("Invalid number of arguments. Usage: ruby client.rb [peer]")
+  abort("Invalid number of arguments. Usage: ruby client.rb [config]")
 end
 
 # use default config so that states are stored across sessions? or let user
