@@ -50,7 +50,9 @@ class Client
       tr = Tracker.new( mi )
       tr.sendRequest("started") #need to announce our presence
       hashAssoc[mi.getInfoHash] = [file_path, dl_path, torrent_data["download-dir"]]
-      puts "Seeding #{torrent_data["torrent-file"]}"
+      if $verb
+        puts "Seeding #{torrent_data["torrent-file"]}"
+      end
     }
 
     sList = Array.new
@@ -68,9 +70,11 @@ class Client
               puts "Bad path."
               exit
             end
-            #if $verb
+            if $verb
               puts "\nSeeding to client #{client_con[1]}:#{client_con[0]}"
-            #end
+            end
+            Thread.current["torrent-file"] = hashAssoc[mi.getInfoHash][0].split("/").last
+            
             fh = File.new( recv_path, "r")
             
             metainfo = Metainfo.new(fh)
@@ -93,9 +97,9 @@ class Client
             end
             peer.seed( client )
             Thread.current["seed"] = false
-            #if $verb
+            if $verb
               puts "\nClient #{client_con[1]}:#{client_con[0]} disconnected."
-            #end
+            end
           }
         end
       rescue Interrupt
@@ -133,6 +137,7 @@ class Client
         begin
           (0..numSpawn - 1).each { |n|
             tList << Thread.new {
+              Thread.current["torrent-file"] = t_name
               Thread.current["peer"] = true
               peer = Peer.new(tracker, fileio)
               peer.connect(n)
@@ -148,30 +153,61 @@ class Client
 
     begin
       updateDelay( 1 ) {
-        peers = 0
-        seeds = 0
+        # torrents = ["torrent name" => [seed_num, peer_num], ...]
+        torrents = Hash.new
+        @config.getTorrents.each { |i, torrent_data|
+          torrents[torrent_data["torrent-file"]] = [0, 0]
+        }
 
         tList.each { |t|
           if t["peer"] == true
             if t["nowSeed"] == true
-              seeds += 1
+              torrents[t["torrent-file"]][0] += 1
             else
-              peers += 1
+              torrents[t["torrent-file"]][1] += 1
             end
           end
         }
 
         sList.each { |t|
           if t["seed"] == true
-            seeds += 1
+            torrents[t["torrent-file"]][0] += 1
           end
         }
 
         # account for any changes to terminal window size
-        t_cols = `/usr/bin/env tput cols`.to_i
-        t_rows = `/usr/bin/env tput lines`.to_i
+        cols_width = `/usr/bin/env tput cols`.to_i
+        rows_height = `/usr/bin/env tput lines`.to_i
         
-        STDOUT.write "Seeds: #{seeds} || Peers: #{peers}             \r"  
+        row_splitter = ("-" * cols_width) + "\n"
+        
+        # cols = [["Column name", col_width], ...]
+        label_cols = Array.new
+        label_cols << ["Torrent Name", 40]
+        label_cols << ["Seeds", 10]
+        label_cols << ["Peers", 10]
+        
+        torrent_cols = Array.new
+        torrents.each { |torrent, data|
+          curr_col = Array.new
+          curr_col << [torrent, label_cols[0][1]]
+          curr_col << [data[0].to_s, label_cols[1][1]]
+          curr_col << [data[1].to_s, label_cols[2][1]]
+          torrent_cols << curr_col
+        }
+        
+        # build string prior to outputting to prevent the screen from flashing
+        out_string = String.new
+        out_string += row_splitter
+        out_string += get_columns_string(label_cols, cols_width)
+        out_string +=  row_splitter
+        out_string +=  row_splitter
+        torrent_cols.each { |torrent_col|
+          out_string += get_columns_string(torrent_col, cols_width)
+        }
+        
+        STDOUT.write "\e[2J\e[f" # clears screen. portable?
+        STDOUT.write out_string
       }
     rescue Interrupt
       puts "\n\nCaught Interrupt. Exiting."
@@ -191,6 +227,20 @@ class Client
     # Thread.new {
     #   peer.connect(1)
     # }
+  end
+  
+  # cols = [["Column name", col_width], ...]
+  def get_columns_string(cols, width)
+    line = String.new
+    line += "|"
+    cols.each { |col|
+      space_width = col[1] - col[0].length
+      line += " " * (space_width / 2)
+      line += col[0]
+      line += " " * (space_width - (space_width / 2)) # account for odd space widths
+      line += "|"
+    }
+    line.slice(0, width) + "\n"
   end
 end
 
@@ -227,7 +277,7 @@ class Workers
     }
 
     @pool.map( &:join ) #wait for all to finish
-  end 
+  end
   
 end
 
