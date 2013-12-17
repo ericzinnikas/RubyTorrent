@@ -135,12 +135,12 @@ class Peer
   end
   
   def getHandshake( socket )
-    #sel = IO.select([socket], [], [], 15);
+    sel = IO.select([socket], [], [], 15);
 
-    #if sel.nil?
-      #puts "Timed out waiting to read."
-      #return ""
-    #end
+    if sel.nil?
+      puts "Timed out waiting to read."
+      return ""
+    end
 
     begin
       pstrlen = socket.read(1).unpack("c")[0]
