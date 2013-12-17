@@ -139,14 +139,14 @@ class Peer
 
     if sel.nil?
       puts "Timed out waiting to read."
-      return false
+      return ""
     end
 
     begin
       pstrlen = socket.read(1).unpack("c")[0]
     rescue NoMethodError
       puts "Received null byte in handshake. Exiting."
-      return false
+      return ""
     end
     
     response = socket.read( 48 + pstrlen )
