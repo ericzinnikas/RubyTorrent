@@ -233,9 +233,10 @@ class Client
     line = String.new
     line += "|"
     cols.each { |col|
+      col_label = col[0].slice(0, col[1])
       space_width = col[1] - col[0].length
       line += " " * (space_width / 2)
-      line += col[0]
+      line += col_label
       line += " " * (space_width - (space_width / 2)) # account for odd space widths
       line += "|"
     }
