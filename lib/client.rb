@@ -143,8 +143,8 @@ class Client
               peer = Peer.new(tracker, fileio)
               peer.connect(n)
               Thread.current["peer"] = false
+              exit
             }
-            exit
           }
         rescue Interrupt
           puts "\nStopping peer."
