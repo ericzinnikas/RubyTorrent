@@ -22,9 +22,10 @@ class Client
     tList = Array.new
     Dir.chdir(@torrent_directory) {
       Dir.glob("*.torrent") { |name|
+        name = Dir.pwd + "/" + name
         tList << Thread.new {
           puts "Loading #{name}"
-          fh = File.new(Dir.pwd + "/" + name, "r")
+          fh = File.new(name, "r")
           metainfo = Metainfo.new(fh)
           
           fileio = FileIO.new(metainfo.getInfo)
