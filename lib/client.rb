@@ -34,7 +34,7 @@ class Client
       mi = Metainfo.new(fh)
       tr = Tracker.new( mi )
       tr.sendRequest("started") #need to announce our presence
-      hashAssoc[mi.getInfoHash] = [file_path, dl_path]
+      hashAssoc[mi.getInfoHash] = [file_path, dl_path, torrent_data["download-dir"]]
     }
 
     seedThread = Thread.new {
@@ -55,7 +55,7 @@ class Client
             fh = File.new( recv_path, "r")
             
             metainfo = Metainfo.new(fh)
-            fileio = FileIO.new( metainfo.getInfo, hashAssoc[recv_hash][1] )
+            fileio = FileIO.new( metainfo.getInfo, hashAssoc[recv_hash][2] )
             tracker = Tracker.new( metainfo )  
 
             leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
