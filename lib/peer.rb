@@ -54,8 +54,6 @@ class Peer
       puts "Aborting connection, no available peers"
       return
     end
-    @peers[peer][0] = "192.241.179.33"
-    @peers[peer][1] = "6889"
     
     puts "Starting connection with #{@peers[peer][0]}:#{@peers[peer][1]}"
     
