@@ -256,7 +256,7 @@ class Peer
       if @work_piece.nil? && ! @peer_choking && ! @fileio.isComplete?
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
-          @work_piece = needed_bits.sample( Random.new_seed.to_s.slice(0, 10).to_i )
+          @work_piece = needed_bits.sample( random: Random.new( Random.new_seed ) )
           @work_offset = 0
 
           puts "Starting work on piece #{@work_piece}"
@@ -277,7 +277,7 @@ class Peer
       if @work_piece.nil? && ! @fileio.isComplete?
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
-          @work_piece = needed_bits.sample( Random.new_seed.to_s.slice(0, 10).to_i )
+          @work_piece = needed_bits.sample( random: Random.new( Random.new_seed ) )
           @work_offset = 0
 
           puts "Starting work on piece #{@work_piece}"
@@ -319,7 +319,7 @@ class Peer
         # TODO choose a new piece to work on
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
-          @work_piece = needed_bits.sample( Random.new_seed.to_s.slice(0, 10).to_i )
+          @work_piece = needed_bits.sample( random: Random.new( Random.new_seed ) )
           @work_offset = 0
         end
         return
@@ -343,7 +343,7 @@ class Peer
         # need to choose a new piece to work on
         needed_bits = @fileio.getBitfield.bits_to_get( @bitfield )
         unless needed_bits.empty?
-          @work_piece = needed_bits.sample( Random.new_seed.to_s.slice(0, 10).to_i )
+          @work_piece = needed_bits.sample( random: Random.new( Random.new_seed ) )
           @work_offset = 0
         end
       else
