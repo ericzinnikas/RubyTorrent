@@ -209,6 +209,13 @@ class Client
         STDOUT.write "\e[2J\e[f" + out_string # 1st part clears screen, portable?
       }
     rescue Interrupt
+      #this is where we'll actually take user input
+      #possible actions would be removing(?) a torrent
+      #maybe ask them to enter a number of the torrent to stop
+      #seeding.
+      #or pause/unpause a torrent, etc.
+      #then throw them back into the loop
+        
       puts "\n\nCaught Interrupt. Exiting."
       sList.each { |t|
         #t.join
