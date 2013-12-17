@@ -96,6 +96,7 @@ class Peer
         send_bitfield(socket)
       end
       
+      begin
       loop {
         if socket.closed? || socket.eof? # peer has sent FIN, no more to read from socket
           puts "Connection closed by peer"
@@ -104,6 +105,10 @@ class Peer
       
         parseMessages( socket )
       }
+      rescue Errno::ECONNRESET
+        puts "Connection reset by peer"
+        return false
+      end
     else
       puts "Invalid infohash received in handshake"
     end
