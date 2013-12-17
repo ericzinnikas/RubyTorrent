@@ -161,16 +161,16 @@ class Client
 
         tList.each { |t|
           if t["peer"] == true
+            if t["completed"].nil?
+              torrents[t["torrent-file"]][2] = 0
+            else
+              torrents[t["torrent-file"]][2] = t["completed"]
+            end
             if t["nowSeed"] == true
               torrents[t["torrent-file"]][0] += 1
             else
               torrents[t["torrent-file"]][1] += 1
             end
-          end
-          if t["completed"].nil?
-            torrents[t["torrent-file"]][2] = 0
-          else
-            torrents[t["torrent-file"]][2] = t["completed"]
           end
         }
 
