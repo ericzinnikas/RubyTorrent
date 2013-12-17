@@ -97,7 +97,7 @@ class Peer
       end
       
       loop {
-        if socket.eof? # peer has sent FIN, no more to read from socket
+        if socket.closed? || socket.eof? # peer has sent FIN, no more to read from socket
           puts "Connection closed by peer"
           break
         end
