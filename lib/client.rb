@@ -156,7 +156,7 @@ class Client
         # torrents = ["torrent name" => [seed_num, peer_num], ...]
         torrents = Hash.new
         @config.getTorrents.each { |i, torrent_data|
-          torrents[torrent_data["torrent-file"]] = [0, 0]
+          torrents[torrent_data["torrent-file"]] = [0, 0, 0]
         }
 
         tList.each { |t|
@@ -167,6 +167,7 @@ class Client
               torrents[t["torrent-file"]][1] += 1
             end
           end
+          torrents[t["torrent-file"]][2] = t["completed"]
         }
 
         sList.each { |t|
@@ -194,7 +195,7 @@ class Client
           curr_col << [torrent, label_cols[0][1]]
           curr_col << [data[0].to_s, label_cols[1][1]]
           curr_col << [data[1].to_s, label_cols[2][1]]
-          curr_col << [get_percentage_bar(0.5, label_cols[3][1]), label_cols[3][1]]
+          curr_col << [get_percentage_bar(data[2], label_cols[3][1]), label_cols[3][1]]
           torrent_cols << curr_col
         }
         
