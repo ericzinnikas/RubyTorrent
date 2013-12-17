@@ -167,7 +167,11 @@ class Client
               torrents[t["torrent-file"]][1] += 1
             end
           end
-          torrents[t["torrent-file"]][2] = t["completed"]
+          if t["completed"].nil?
+            torrents[t["torrent-file"]][2] = 0
+          else
+            torrents[t["torrent-file"]][2] = t["completed"]
+          end
         }
 
         sList.each { |t|
