@@ -136,6 +136,26 @@ class Peer
     end
   end
   
+  def self.getHandshake( socket ) #define as class/instance method too
+    sel = IO.select([socket], [], [], 15);
+
+    if sel.nil?
+      puts "Timed out waiting to read."
+      return ""
+    end
+
+    begin
+      pstrlen = socket.read(1).unpack("c")[0]
+    rescue NoMethodError
+      puts "Received null byte in handshake. Exiting."
+      return ""
+    end
+    
+    response = socket.read( 48 + pstrlen )
+    puts "Got handshake"
+    
+    response
+  end
   def getHandshake( socket )
     sel = IO.select([socket], [], [], 15);
 
