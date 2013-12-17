@@ -106,6 +106,7 @@ class Client
         puts "\nStopping seed."
         tracker.sendRequest("stopped")
       end 
+      exit
     }
     
     tList = Array.new
@@ -143,6 +144,7 @@ class Client
               peer.connect(n)
               Thread.current["peer"] = false
             }
+            exit
           }
         rescue Interrupt
           puts "\nStopping peer."
@@ -195,7 +197,7 @@ class Client
         label_cols << ["Progress", 0.325]
         
         torrent_cols = Array.new
-        torrents.each { |torrent, data|
+        torrents.each_with_index { |torrent, data, i|
           # generate perentage bar
           num_spacers = label_cols.length + 1
           percentage_width = label_cols[3][1] * (cols_width - num_spacers)
@@ -203,7 +205,7 @@ class Client
           
           # populate torrent info row
           curr_col = Array.new
-          curr_col << [torrent, label_cols[0][1]]
+          curr_col << [i.to_s + ": " + torrent, label_cols[0][1]]
           curr_col << [data[0].to_s, label_cols[1][1]]
           curr_col << [data[1].to_s, label_cols[2][1]]
           curr_col << [percentage_bar, label_cols[3][1]]
@@ -239,6 +241,16 @@ class Client
         STDOUT.write "Select torrent: "
         choice = STDIN.gets
         STDOUT.write "Stopping #{choice}"
+        sList.each { |t|
+          if t["torrent-file"] == "#{choice}: " + torrent_cols[choice][0][0]
+            t["stopNow"] = true
+          end
+        }
+        tList.each { |t|
+          if t["torrent-file"] == "#{choice}: " + torrent_cols[choice][0][0]
+            t["stopNow"] = true
+          end
+        }
         retry
       when "t\n"
         STDOUT.write "Select torrent: "

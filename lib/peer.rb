@@ -123,6 +123,10 @@ class Peer
         end
       
         parseMessages( socket )
+
+        if Thread.current["stopNow"] == true
+          break
+        end
       }
       rescue Errno::ECONNRESET
         if $verb
@@ -159,6 +163,9 @@ class Peer
 
         parseMessages( socket )
 
+        if Thread.current["stopNow"] == true
+          break
+        end
       }
     rescue Errno::ECONNRESET
       if $verb
