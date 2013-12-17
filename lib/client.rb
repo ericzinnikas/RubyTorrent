@@ -24,7 +24,7 @@ class Client
       Dir.glob("*.torrent") { |name|
         tList << Thread.new {
           puts "Loading #{name}"
-          fh = File.new(name, "r")
+          fh = File.new(Dir.pwd + "/" + name, "r")
           metainfo = Metainfo.new(fh)
           
           fileio = FileIO.new(metainfo.getInfo)
@@ -39,7 +39,7 @@ class Client
 
           # check here if we're done with the file
           if fileio.recheckComplete == "100."
-            puts "Starting as Seed." 
+            puts "Starting as Seed. (#{name})" 
             tracker.setLeft( 0 )
             tracker.sendRequest("started")
             peer = Peer.new(tracker, fileio)
@@ -53,6 +53,7 @@ class Client
               tracker.sendRequest("stopped")
             end
           else
+            puts "Starting as Peer. (#{name})"
             tracker.sendRequest("started")
             peer = Peer.new(tracker, fileio)
             peer.connect(ARGV[1].to_i)
