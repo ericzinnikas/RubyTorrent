@@ -37,13 +37,14 @@ class Client
       hashAssoc[mi.getInfoHash] = [file_path, dl_path, torrent_data["download-dir"]]
     }
 
+    sList = Array.new
     seedThread = Thread.new {
       seedCon = TCPServer.new( 6889 )
       puts "Server started."
       tracker = nil
       begin
         loop do
-          Thread.start( seedCon.accept ) { |client|
+          sList << Thread.start( seedCon.accept ) { |client|
             client_con = Socket.unpack_sockaddr_in(client.getpeername)
             puts "Accepting client #{client_con[1]}:#{client_con[0]}"
             res = Peer.getHandshake( client )
@@ -69,9 +70,11 @@ class Client
             tracker.setLeft(leftBytes)
             tracker.sendRequest("started") 
 
+            Thread.current["seed"] = true
             peer = Peer.new( tracker, fileio )
             puts "Seeding!"
             peer.seed( client )
+            Thread.current["seed"] = false
           }
         end
       rescue Interrupt
@@ -110,8 +113,10 @@ class Client
         begin
           (0..numSpawn - 1).each { |n|
             tList << Thread.new {
+              Thread.current["peer"] = true
               peer = Peer.new(tracker, fileio)
               peer.connect(n)
+              Thread.current["peer"] = false
             }
           }
         rescue Interrupt
@@ -121,10 +126,36 @@ class Client
       end
     }
 
-    tList.each { |t|
-      t.join
-    }
-    seedThread.join
+    begin
+      updateDelay( 2 ) {
+        peers = 0
+        seeds = 0
+
+        tList.each { |t|
+          if t["peer"] == true
+            peers += 1
+          end
+        }
+
+        sList.each { |t|
+          if t["seed"] == true
+            seeds += 1
+          end
+        }
+
+        STDOUT.write "Currently seeding: #{seeds} || Currently downloading: #{peers}    \r"  
+      }
+    rescue Interrupt
+      puts "Caught Interrupt. Exiting."
+      sList.each { |t|
+        #t.join
+      }
+      tList.each { |t|
+        #t.join
+      }
+      #seedThread.join
+    end
+
     
     # TODO: eventually for off here to other peers
     # TODO: Detect timeouts in each peer connection
@@ -132,6 +163,17 @@ class Client
     # Thread.new {
     #   peer.connect(1)
     # }
+  end
+end
+
+def updateDelay( sec )
+  last = Time.now
+  loop do
+    sleep 0.1
+    if Time.new - last_tick >= sec
+      yield
+      last = Time.now
+    end
   end
 end
 
@@ -171,6 +213,11 @@ class Workers
   
 end
 
+if ARGV.len == 1 && ARGV[0] == "verbose"
+  $verb = true
+else
+  $verb = false
+end
 # use default config so that states are stored across sessions? or let user
 # specify? (default for now)
 config = SessionConfig.new("config/config.yaml") 

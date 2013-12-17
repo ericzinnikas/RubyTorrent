@@ -29,7 +29,7 @@ class FileIO
     
     unless Dir.exists?(prefix_dir)
         Dir.mkdir(prefix_dir)
-      end
+    end
     
     unless prefix_dir.chars.last == File::SEPARATOR 
       prefix_dir += File::SEPARATOR 
@@ -126,7 +126,9 @@ class FileIO
     @completePieces = countLoaded
     perc = (@completePieces.to_f / @totalPieces.to_f) * 100
     perc = perc.to_s.slice(0, 4)
-    puts "Checked: #{perc}% complete file (#{@completePieces}/#{@totalPieces})."
+    if $verb
+      puts "Checked: #{perc}% complete file (#{@completePieces}/#{@totalPieces})."
+    end
     perc
   end
   

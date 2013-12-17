@@ -52,11 +52,15 @@ class Peer
   def connect(peer)
     # for clean exit if no peers exist (needs to be before @peers[peer][..])
     if @peers.nil? || @peers.empty? || @peers[peer].nil?
-      puts "Aborting connection, no available peers"
+      if $verb
+        puts "Aborting connection, no available peers"
+      end
       return
     end
     
-    puts "Starting connection with #{@peers[peer][0]}:#{@peers[peer][1]}"
+    if $verb
+      puts "Starting connection with #{@peers[peer][0]}:#{@peers[peer][1]}"
+    end
     
     begin #Begin error handling.
           #Only really need to worry about initial protocol setup, after
@@ -65,7 +69,9 @@ class Peer
       begin
         socket = TCPSocket.new(@peers[peer][0], @peers[peer][1])
       rescue Interrupt
-        puts "Connection to peer cancelled."
+        if $verb
+          puts "Connection to peer cancelled."
+        end
         @tracker.sendRequest("stopped")
         return false
       end
@@ -74,19 +80,29 @@ class Peer
       response = getHandshake(socket)
 
     rescue Errno::ECONNREFUSED
-      puts "Connection to #{@peers[peer][0]} refused."
+      if $verb
+        puts "Connection to #{@peers[peer][0]} refused."
+      end
       return false
     rescue Errno::ECONNRESET
-      puts "Connection to #{@peers[peer][0]} reset."
+      if $verb
+        puts "Connection to #{@peers[peer][0]} reset."
+      end
       return false
     rescue Errno::EHOSTUNREACH
-      puts "Connection to #{@peers[peer][0]} unreachable."
+      if $verb
+        puts "Connection to #{@peers[peer][0]} unreachable."
+      end
       return false
     rescue Errno::ENETUNREACH
-      puts "Connection to #{@peers[peer][0]} unreachable."
+      if $verb
+        puts "Connection to #{@peers[peer][0]} unreachable."
+      end
       return false
     rescue Errno::ETIMEDOUT
-      puts "Connection to #{@peers[peer][0]} timed out."
+      if $verb
+        puts "Connection to #{@peers[peer][0]} timed out."
+      end
       return false
     end #End error handling.
     
@@ -100,25 +116,33 @@ class Peer
       begin
       loop {
         if socket.closed? || socket.eof? # peer has sent FIN, no more to read from socket
-          puts "Connection closed by peer"
+          if $verb
+            puts "Connection closed by peer"
+          end
           break
         end
       
         parseMessages( socket )
       }
       rescue Errno::ECONNRESET
-        puts "Connection reset by peer"
+        if $verb
+          puts "Connection reset by peer"
+        end
         return false
       end
     else
-      puts "Invalid infohash received in handshake"
+      if $verb
+        puts "Invalid infohash received in handshake"
+      end
     end
     
     #socket.close 
   end
 
   def seed( socket ) #doesn't necessarily mean we're a seeder...
-    puts "Starting seeding."
+    if $verb
+      puts "Starting seeding."
+    end
 
     sendHandshake( socket )
 
@@ -127,7 +151,9 @@ class Peer
     begin
       loop {
         if socket.eof?
-          puts "Connection closed by peer"
+          if $verb
+            puts "Connection closed by peer"
+          end
           break
         end
 
@@ -135,7 +161,9 @@ class Peer
 
       }
     rescue Errno::ECONNRESET
-      puts "Connection reset (maybe we're done?)"
+      if $verb
+        puts "Connection reset (maybe we're done?)"
+      end
       return false
     end
   end
@@ -144,19 +172,25 @@ class Peer
     sel = IO.select([socket], [], [], 15);
 
     if sel.nil?
-      puts "Timed out waiting to read."
+      if $verb
+        puts "Timed out waiting to read."
+      end
       return ""
     end
 
     begin
       pstrlen = socket.read(1).unpack("c")[0]
     rescue NoMethodError
-      puts "Received null byte in handshake. Exiting."
+      if $verb
+        puts "Received null byte in handshake. Exiting."
+      end
       return ""
     end
     
     response = socket.read( 48 + pstrlen )
-    puts "Got handshake"
+    if $verb
+      puts "Got handshake"
+    end
     
     response
   end
@@ -164,19 +198,25 @@ class Peer
     sel = IO.select([socket], [], [], 15);
 
     if sel.nil?
-      puts "Timed out waiting to read."
+      if $verb
+        puts "Timed out waiting to read."
+      end
       return ""
     end
 
     begin
       pstrlen = socket.read(1).unpack("c")[0]
     rescue NoMethodError
-      puts "Received null byte in handshake. Exiting."
+      if $verb
+        puts "Received null byte in handshake. Exiting."
+      end
       return ""
     end
     
     response = socket.read( 48 + pstrlen )
-    puts "Got handshake"
+    if $verb
+      puts "Got handshake"
+    end
     
     response
   end
@@ -187,12 +227,16 @@ class Peer
     sel = IO.select([], [socket], [], 15);
 
     if sel.nil?
-      puts "Timed out waiting to write."
+      if $verb
+        puts "Timed out waiting to write."
+      end
       exit
     end
     
     socket.write(raw_data.pack("cA19c8A20A20"))
-    puts "Sent handshake"
+    if $verb
+      puts "Sent handshake"
+    end
     true
   end
 
@@ -208,7 +252,9 @@ class Peer
 
     if len == 0
       # keep-alive message
-      puts "Got keep-alive message"
+      if $verb
+        puts "Got keep-alive message"
+      end
       return
     end
 
@@ -216,12 +262,16 @@ class Peer
 
     case id
     when 0
-      puts "Got choke message"
+      if $verb
+        puts "Got choke message"
+      end
       @peer_choking = true
       @pending_requests = [] # choke discards all unanswered requests
     when 1
       # only send data messages when unchoked
-      puts "Got unchoke message"
+      if $verb
+        puts "Got unchoke message"
+      end
 
       if ! @fileio.isComplete?
         send_request( socket, @work_piece, @work_offset )
@@ -233,19 +283,25 @@ class Peer
       @peer_choking = false
     when 2
       # only send data when peer is interested
-      puts "Got interested message"
+      if $verb
+        puts "Got interested message"
+      end
 
       send_unchoke( socket )
 
       @peer_interested = true
     when 3
-      puts "Got not interested message"
+      if $verb
+        puts "Got not interested message"
+      end
 
       send_choke( socket )
 
       @peer_interested = false
     when 4
-      puts "Got have message"
+      if $verb
+        puts "Got have message"
+      end
       # build logic to ask peers for pieces
       # maybe trigger a request msg once we learn
       # they have a piece we need? or maybe trigger it
@@ -259,14 +315,18 @@ class Peer
           @work_piece = needed_bits.sample( random: Random.new( Random.new_seed ) )
           @work_offset = 0
 
-          puts "Starting work on piece #{@work_piece}"
+          if $verb
+            puts "Starting work on piece #{@work_piece}"
+          end
 
           # send request for first block
           send_request( socket, @work_piece, @work_offset )
         end
       end
     when 5
-      puts "Got bitfield message"
+      if $verb
+        puts "Got bitfield message"
+      end
       # note, many clients will send incomplete bitfield, then supplement
       # remaining gaps with "have" messages (called lazy bitfield)
       data = socket.read( len - 1 )
@@ -280,7 +340,9 @@ class Peer
           @work_piece = needed_bits.sample( random: Random.new( Random.new_seed ) )
           @work_offset = 0
 
-          puts "Starting work on piece #{@work_piece}"
+          if $verb
+            puts "Starting work on piece #{@work_piece}"
+          end
 
           send_unchoke( socket );
           send_interested( socket );
@@ -292,7 +354,9 @@ class Peer
       end
 
     when 6
-      puts "Got request message"
+      if $verb
+        puts "Got request message"
+      end
       reqData = socket.read(12).unpack("N3")
       @pending_requests << reqData
       ## we  should just send pieces now? or use a queue
@@ -301,7 +365,9 @@ class Peer
         send_piece( socket, reqData[0], reqData[1], reqData[2] )
       end
     when 7
-      puts "Got piece message"
+      if $verb
+        puts "Got piece message"
+      end
       # Also, I don't think we need to synchronize access
       # to this with a mutex. Because peers will probably
       # be writing at separate times, right?
@@ -336,7 +402,9 @@ class Peer
       if pieceHash == actualHash
         @fileio.getBitfield.set_bit(piece_index)
         @fileio.setComplete(1)
-        puts "Bit #{piece_index} set"
+        if $verb
+          puts "Bit #{piece_index} set"
+        end
 
         send_have( socket, piece_index ) #also need to send this to all other peers
 
@@ -364,77 +432,105 @@ class Peer
         if @fileio.recheckComplete() == "100."
           socket.close
 
-          puts "File download complete!"
+          if $verb
+            puts "File download complete!"
+          end
           # now exit
           # and trigger all other threads to exit
           @tracker.sendRequest("completed")
           return true
           #exit #Don't necessarily need to stop now. Unless connection is closed.
         else
-          puts "Recheck failed."
+          if $verb
+            puts "Recheck failed."
+          end
         end
       else
-        puts "File #{perc}% complete (#{@fileio.getComplete}/#{@fileio.getTotal})."
+        if $verb
+          puts "File #{perc}% complete (#{@fileio.getComplete}/#{@fileio.getTotal})."
+        end
       end
     when 8
-      puts "Got cancel message"
+      if $verb
+        puts "Got cancel message"
+      end
       @pending_requests.delete(socket.read(12).unpack("N3"))
     when 9
       # only needed with DHT
-      puts "Got port message"
+      if $verb
+        puts "Got port message"
+      end
       data = socket.read( len - 1 )
     else
-      puts "Unsupported Protocol Message #{id}"
+      if $verb
+        puts "Unsupported Protocol Message #{id}"
+      end
     end
 
   end
   
   def send_keepalive(socket)
-    puts "Sent keep-alive message"
+    if $verb
+      puts "Sent keep-alive message"
+    end
     socket.write([0].pack("N"))
   end
   
   def send_choke(socket)
-    puts "Sent choke message"
+    if $verb
+      puts "Sent choke message"
+    end
     @local_choking = true
     socket.write([1, 0].pack("Nc"))
   end
   
   def send_unchoke(socket)
-    puts "Sent unchoke message"
+    if $verb
+      puts "Sent unchoke message"
+    end
     @local_choking = false
     socket.write([1, 1].pack("Nc"))
   end
   
   def send_interested(socket)
-    puts "Sent interested message"
+    if $verb
+      puts "Sent interested message"
+    end
     @local_interested = true
     socket.write([1, 2].pack("Nc"))
   end
   
   def send_notinterested(socket)
-    puts "Sent not interested message"
+    if $verb
+      puts "Sent not interested message"
+    end
     @local_interested = false
     socket.write([1, 3].pack("Nc"))
   end
   
   # piece_index is zero-based
   def send_have( socket, piece_index)
-    puts "Sent have message"
+    if $verb
+      puts "Sent have message"
+    end
     socket.write([5, 4, piece_index].pack("NcN"))
   end
   
   # might want to implement lazy bitfield to ensure our bitfield messages
   # aren't getting filtered by ISPs
   def send_bitfield(socket)
-    puts "Sent bitfield message"
+    if $verb
+      puts "Sent bitfield message"
+    end
     bitfield_length = (@fileio.getBitfield.get_num_of_bits + 7) / 8
     bitfield_data = @fileio.getBitfield.to_binary_data
     socket.write([(1 + bitfield_length), 5].pack("Nc") + bitfield_data)
   end
   
   def send_request(socket, piece_index, begin_offset)
-    puts "Sent request message for piece #{piece_index} (#{begin_offset})"
+    if $verb
+      puts "Sent request message for piece #{piece_index} (#{begin_offset})"
+    end
     
     # account for last block in last piece which may be truncated
     req_len = nil
@@ -448,7 +544,9 @@ class Peer
   end
   
   def send_piece(socket, piece_index, begin_offset, block_length )
-    puts "Sent piece message"
+    if $verb
+      puts "Sent piece message"
+    end
     # lets use block size specified by peer..?
     block_bytes = @fileio.get_piece_bytes(piece_index).byteslice(begin_offset, block_length )
 
@@ -457,7 +555,9 @@ class Peer
   end
   
   def send_cancel(socket, piece_index, begin_offset)
-    puts "Sent cancel message"
+    if $verb
+      puts "Sent cancel message"
+    end
     
     # account for last block in last piece which may be truncated
     req_len = nil
@@ -472,7 +572,9 @@ class Peer
   
   # only needed with DHT
   def send_port(socket, listen_port)
-    puts "Sent port message"
+    if $verb
+      puts "Sent port message"
+    end
     socket.write([3, 9, listen_port].pack("Ncn"))
   end
   

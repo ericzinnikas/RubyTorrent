@@ -6,7 +6,9 @@ class Bitfield
   
   # length is number of bits (i.e. pieces)
   def initialize(length)
-    puts "Creating bitfield of #{length} pieces (stored as #{(length + 7)/8} bytes)"
+    if $verb
+      puts "Creating bitfield of #{length} pieces (stored as #{(length + 7)/8} bytes)"
+    end
     @bit_array = Array.new((length + 7) / 8, 0) # + 7 to round up
     @num_of_bits = length
   end

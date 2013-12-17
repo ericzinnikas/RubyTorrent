@@ -129,7 +129,9 @@ class Tracker
 	end
 
 	def getPeers
-    puts "#{@peers}"
+    if $verb
+      puts "#{@peers}"
+    end
 		@peers
 	end
 
