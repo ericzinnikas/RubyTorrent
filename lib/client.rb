@@ -44,7 +44,6 @@ class Client
       begin
         loop do
           Thread.start( seedCon.accept ) { |client|
-            client.puts "OKAY?!?!"
             client_con = Socket.unpack_sockaddr_in(client.getpeername)
             puts "Accepting client #{client_con[1]}:#{client_con[0]}"
             res = Peer.getHandshake( client )
