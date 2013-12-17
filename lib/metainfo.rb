@@ -1,6 +1,8 @@
 #handle everything dealing w/metainfo files here
 #need to build some tests for this
 
+require 'digest/sha1'
+
 module Torrent
 
 class Metainfo
@@ -16,6 +18,7 @@ class Metainfo
 	def initialize(fh) #once we parse, @fh is at EOF, should reset it?
 		infoHash = Torrent::Bencode.decode(fh)
 		@info = infoHash["info"]
+    @info_hash = Digest::SHA1.digest( @info.to_bencode )
 		@announce = infoHash["announce"]
 		@announceList = infoHash["announce-list"]
 		@creationDate = infoHash["creation date"]
@@ -38,6 +41,10 @@ class Metainfo
 	def getInfo
 		@info
 	end
+
+  def getInfoHash
+    @info_hash
+  end
 
 	def getAnnounce
 		@announce
