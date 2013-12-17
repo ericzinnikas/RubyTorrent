@@ -58,9 +58,9 @@ class Peer
       return
     end
     
-    if $verb
-      puts "Starting connection with #{@peers[peer][0]}:#{@peers[peer][1]}"
-    end
+    #if $verb
+      puts "\nStarting connection with #{@peers[peer][0]}:#{@peers[peer][1]}"
+    #end
     
     begin #Begin error handling.
           #Only really need to worry about initial protocol setup, after
@@ -432,9 +432,9 @@ class Peer
         if @fileio.recheckComplete() == "100."
           socket.close
 
-          if $verb
-            puts "File download complete!"
-          end
+          #if $verb
+            puts "File download complete! (#{@fileio.getInfoDict["name"]})"
+          #end
           # now exit
           # and trigger all other threads to exit
           @tracker.sendRequest("completed")

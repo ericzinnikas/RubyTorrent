@@ -51,15 +51,11 @@ class Client
     sList = Array.new
     seedThread = Thread.new {
       seedCon = TCPServer.new( 6889 )
-      puts "Server started."
       tracker = nil
       begin
         loop do
           sList << Thread.start( seedCon.accept ) { |client|
             client_con = Socket.unpack_sockaddr_in(client.getpeername)
-            if $verb
-              puts "Accepting client #{client_con[1]}:#{client_con[0]}"
-            end
             res = Peer.getHandshake( client )
             recv_hash = res.unpack("A19c8A20A20")[9]
             recv_path = hashAssoc[recv_hash][0]
@@ -67,6 +63,9 @@ class Client
               puts "Bad path."
               exit
             end
+            #if $verb
+              puts "\nSeeding to client #{client_con[1]}:#{client_con[0]}"
+            #end
             fh = File.new( recv_path, "r")
             
             metainfo = Metainfo.new(fh)
@@ -89,6 +88,9 @@ class Client
             end
             peer.seed( client )
             Thread.current["seed"] = false
+            #if $verb
+              puts "\nClient #{client_con[1]}:#{client_con[0]} disconnected."
+            #end
           }
         end
       rescue Interrupt
@@ -141,7 +143,7 @@ class Client
     }
 
     begin
-      updateDelay( 2 ) {
+      updateDelay( 1 ) {
         peers = 0
         seeds = 0
 
@@ -157,7 +159,7 @@ class Client
           end
         }
 
-        STDOUT.write "Seeds (active): #{hashAssoc.length} (#{seeds}) || Peers: #{peers}             \r"  
+        STDOUT.write "Seeds: #{seeds} || Peers: #{peers}             \r"  
       }
     rescue Interrupt
       puts "\n\nCaught Interrupt. Exiting."
