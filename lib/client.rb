@@ -44,9 +44,11 @@ class Client
       begin
         loop do
           Thread.start( seedCon.accept ) { |client|
-            puts client.gets
             client_con = Socket.unpack_sockaddr_in(client.getpeername)
             puts "Accepting client #{client_con[1]}:#{client_con[0]}"
+            puts client.gets
+            puts client.gets
+            puts client.gets
             res = Peer.getHandshake( client )
             puts "Recv handshake"
             recv_hash = res.unpack("A19c8A20A20")[9]
