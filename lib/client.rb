@@ -18,6 +18,17 @@ class Client
     
     @config = config
   end
+
+  def updateDelay( sec )
+    last = Time.now
+    loop do
+      sleep 0.1
+      if Time.new - last >= sec
+        yield
+        last = Time.now
+      end
+    end
+  end
   
   def runClient
 
@@ -46,9 +57,10 @@ class Client
         loop do
           sList << Thread.start( seedCon.accept ) { |client|
             client_con = Socket.unpack_sockaddr_in(client.getpeername)
-            puts "Accepting client #{client_con[1]}:#{client_con[0]}"
+            if $verb
+              puts "Accepting client #{client_con[1]}:#{client_con[0]}"
+            end
             res = Peer.getHandshake( client )
-            puts "Recv handshake"
             recv_hash = res.unpack("A19c8A20A20")[9]
             recv_path = hashAssoc[recv_hash][0]
             if recv_path.nil?
@@ -72,13 +84,15 @@ class Client
 
             Thread.current["seed"] = true
             peer = Peer.new( tracker, fileio )
-            puts "Seeding!"
+            if $verb
+              puts "Seeding!"
+            end
             peer.seed( client )
             Thread.current["seed"] = false
           }
         end
       rescue Interrupt
-        puts "Stopping seed."
+        puts "\nStopping seed."
         tracker.sendRequest("stopped")
       end 
     }
@@ -120,7 +134,7 @@ class Client
             }
           }
         rescue Interrupt
-          puts "Stopping peer."
+          puts "\nStopping peer."
           tracker.sendRequest("stopped")
         end
       end
@@ -143,10 +157,10 @@ class Client
           end
         }
 
-        STDOUT.write "Currently seeding: #{seeds} || Currently downloading: #{peers}    \r"  
+        STDOUT.write "Seeds (active): #{hashAssoc.length} (#{seeds}) || Peers: #{peers}             \r"  
       }
     rescue Interrupt
-      puts "Caught Interrupt. Exiting."
+      puts "\n\nCaught Interrupt. Exiting."
       sList.each { |t|
         #t.join
       }
@@ -166,16 +180,6 @@ class Client
   end
 end
 
-def updateDelay( sec )
-  last = Time.now
-  loop do
-    sleep 0.1
-    if Time.new - last_tick >= sec
-      yield
-      last = Time.now
-    end
-  end
-end
 
 class Workers
 
@@ -213,7 +217,7 @@ class Workers
   
 end
 
-if ARGV.len == 1 && ARGV[0] == "verbose"
+if ARGV.length == 1 && ARGV[0] == "verbose"
   $verb = true
 else
   $verb = false
