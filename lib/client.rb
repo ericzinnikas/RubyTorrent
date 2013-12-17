@@ -39,6 +39,10 @@ class Client
       if dir_path.nil?
         dir_path = ""
       end
+      unless Dir.exists?(dir_path)
+        puts "Invalid file path provided, exiting"
+        exit
+      end
       file_path = Dir.pwd + "/" + dir_path + "/" + torrent_data["torrent-file"]
       dl_path = torrent_data["download-dir"]
       fh = File.new(file_path, "r")
@@ -163,6 +167,10 @@ class Client
           end
         }
 
+        # account for any changes to terminal window size
+        t_cols = `/usr/bin/env tput cols`.to_i
+        t_rows = `/usr/bin/env tput lines`.to_i
+        
         STDOUT.write "Seeds: #{seeds} || Peers: #{peers}             \r"  
       }
     rescue Interrupt
@@ -219,7 +227,7 @@ class Workers
     }
 
     @pool.map( &:join ) #wait for all to finish
-  end
+  end 
   
 end
 
@@ -228,6 +236,7 @@ if ARGV.length == 1 && ARGV[0] == "verbose"
 else
   $verb = false
 end
+
 # use default config so that states are stored across sessions? or let user
 # specify? (default for now)
 config = SessionConfig.new("config/config.yaml") 

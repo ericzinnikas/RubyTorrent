@@ -27,14 +27,13 @@ class FileIO
     @numBytes = 0
     @totalPieces = info["pieces"].bytesize / 20
     
-    unless Dir.exists?(prefix_dir)
-        Dir.mkdir(prefix_dir)
-    end
+    build_dir_path(prefix_dir)
     
     unless prefix_dir.chars.last == File::SEPARATOR 
       prefix_dir += File::SEPARATOR 
     end
     
+    no_files_existed = true
     if info["files"] != nil
       # multiple file mode
       
@@ -54,6 +53,9 @@ class FileIO
           end
         }
         
+        if File.exists?(build_dir + filename)
+          no_files_existed = false
+        end
         @files << [File.open(build_dir + filename, File::RDWR | File::CREAT), file["length"]]
         if @files.last[0].size < @files.last[1]
           @files.last[0].seek(@files.last[0].size, IO::SEEK_SET)
@@ -63,20 +65,69 @@ class FileIO
     else
       # single file mode
       @numBytes = info["length"] 
+      if File.exists?(prefix_dir + info["name"])
+        no_files_existed = false
+      end
       @files << [File.open(prefix_dir + info["name"], File::RDWR | File::CREAT), info["length"]]
-      if @files.last[0].size < @files.last[1]
+      if @files.last[0].size < @files.last[1] # still needs to be checked even if file exists
         @files.last[0].seek(@files.last[0].size, IO::SEEK_SET)
         (0..((@files.last[1] - @files.last[0].size)/1024)).each {
           @files.last[0].write("\0" * 1024)
         }
       end
     end
-
-    recheckComplete()
+    unless no_files_existed
+      recheckComplete()
+    else
+      gen_initial_states()
+    end
     
     #puts @bitfield.to_binary_string
   end
-
+  
+  def gen_initial_states
+    info = @info_dictionary
+    @piece_files = Array.new
+    fieldSize = info["pieces"].length / 20
+    @bitfield = Bitfield.new( fieldSize )
+    @completePieces = 0
+    
+    bytes = nil
+    @totalPieces.times { |piece_index|     
+      piece_offset = piece_index * @pieceLength
+      file_index = nil
+      filelength_offset = 0
+      @files.each_with_index { |file, index|
+        if filelength_offset + file[1] > piece_offset
+          file_index = index
+          break
+        else
+          filelength_offset += file[1]
+        end
+      }
+      
+      @piece_files << [file_index, piece_offset - filelength_offset, 1]
+      
+      if @files[file_index][1] - (piece_offset - filelength_offset) > @pieceLength
+        bytes = @pieceLength
+      else
+        bytes = @files[file_index][1] - (piece_offset - filelength_offset)
+      end
+      
+      while bytes != @pieceLength && file_index + 1 < @files.length
+        file_index += 1
+        @piece_files[piece_index][2] += 1
+          
+        if @files[file_index][1] > @pieceLength - bytes
+          bytes += @pieceLength - bytes
+        else
+          bytes += @files[file_index][1] 
+        end
+      end
+    }
+    @lastPieceLength = bytes
+  end
+  
   def recheckComplete
     info = @info_dictionary
     @piece_files = Array.new #don't wanna overwrite old array, so start new
@@ -171,6 +222,17 @@ class FileIO
       bytes += @files[file_index][0].read(@pieceLength - bytes.bytesize)
     end
     bytes
+  end
+  
+  # will build the provided directory path, or do nothing if it exists already
+  def build_dir_path(dir_path)
+    dir_builder = ""
+    dir_path.split("/").each { |dir|
+      unless Dir.exists?(dir_builder + dir)
+        Dir.mkdir(dir_builder + dir)
+      end
+      dir_builder += dir + "/"
+    }
   end
   
   def get_piece_hash(piece_index)   
