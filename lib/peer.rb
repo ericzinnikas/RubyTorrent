@@ -111,33 +111,27 @@ class Peer
     #socket.close 
   end
 
-  def seed( socket )
+  def seed( socket ) #doesn't necessarily mean we're a seeder...
     puts "Starting seeding."
 
-    response = getHandshake( socket )
-    if verifyHandshake( response )
-      sendHandshake( socket )
+    sendHandshake( socket )
 
-      send_bitfield( socket )
+    send_bitfield( socket )
 
-      begin
-        loop {
-          if socket.eof?
-            puts "Connection closed by peer"
-            break
-          end
+    begin
+      loop {
+        if socket.eof?
+          puts "Connection closed by peer"
+          break
+        end
 
-          parseMessages( socket )
+        parseMessages( socket )
 
-        }
-      rescue Errno::ECONNRESET
-        puts "Connection reset (maybe we're done?)"
-        return false
-      end
-    else
+      }
+    rescue Errno::ECONNRESET
+      puts "Connection reset (maybe we're done?)"
       return false
     end
-
   end
   
   def getHandshake( socket )
@@ -348,7 +342,7 @@ class Peer
           # now exit
           # and trigger all other threads to exit
           @tracker.sendRequest("completed")
-          exit
+          exit #Don't necessarily need to stop now. Unless connection is closed.
         else
           puts "Recheck failed."
         end

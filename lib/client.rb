@@ -20,57 +20,99 @@ class Client
   end
   
   def runClient
+
+    hashAssoc = Hash.new
+
+    @config.getTorrents.each { |i, torrent_data|
+      dir_path = torrent_data["file-dir"]
+      if dir_path.nil?
+        dir_path = ""
+      end
+      path = Dir.pwd + "/" + dir_path + "/" + torrent_data["torrent-file"]
+      fh = File.new(path, "r")
+      mi = Metainfo.new(fh)
+      hashAssoc[mi.getInfoHash] = path
+    }
+
+    seedThread = Thread.new {
+      seedCon = TCPServer.new( 6889 )
+      tracker = nil
+      begin
+        loop do
+          Thread.start( seedCon.accept ) { |client|
+            res = Peer.getHandshake( client )
+            recv_hash = res.unpack("A19c8A20A20")[9]
+            recv_path = hashAssoc[recv_hash]
+            if recv_path.nil?
+              exit
+            end
+            fh = File.new( recv_path, "r")
+            
+            metainfo = Metainfo.new(fh)
+            fileio = FileIO.new( metainfo.getInfo )
+            tracker = Tracker.new( metainfo )  
+
+            leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
+            if (fileio.getBitfield.check_bit(fileio.getTotal - 1) == 0)
+              leftBytes -= fileio.getPieceLength
+              leftBytes += fileio.getLastPieceLen
+            end
+            tracker.setLeft(leftBytes)
+            tracker.sendRequest("started") 
+
+            peer = Peer.new( tracker, fileio )
+            peer.seed( client )
+          }
+        end
+      rescue Interrupt
+        puts "Stopping seed."
+        tracker.sendRequest("stopped")
+      end 
+    }
+    
     tList = Array.new
     @config.getTorrents.each { |i, torrent_data|
       dir_path = torrent_data["file-dir"]
       if dir_path.nil?
-        dir_path = Dir.pwd
+        dir_path = ""
       end
-      Dir.chdir(dir_path) {
-        t_name = torrent_data["torrent-file"]
-        tList << Thread.new {
-          puts "Loading #{t_name}"
-          fh = File.new(dir_path + File::SEPARATOR + t_name, "r")
-          metainfo = Metainfo.new(fh)
-          
-          fileio = FileIO.new(metainfo.getInfo)
+      t_name = torrent_data["torrent-file"]
+      puts "Loading #{t_name}"
+      fh = File.new(Dir.pwd + "/" + dir_path + File::SEPARATOR + t_name, "r")
+      metainfo = Metainfo.new(fh)
+      
+      fileio = FileIO.new(metainfo.getInfo)
+      tracker = Tracker.new(metainfo)
+      leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
+      if (fileio.getBitfield.check_bit(fileio.getTotal - 1) == 0)
+        leftBytes -= fileio.getPieceLength
+        leftBytes += fileio.getLastPieceLen
+      end
+      tracker.setLeft(leftBytes)
+      tracker.sendRequest("started")
 
-          tracker = Tracker.new(metainfo)
-          leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
-          if (fileio.getBitfield.check_bit(fileio.getTotal - 1) == 0)
-            leftBytes -= fileio.getPieceLength
-            leftBytes += fileio.getLastPieceLen
-          end
-          tracker.setLeft(leftBytes)
+      numSpawn = 5
+      if tracker.getPeers < 5
+        numSpawn = tracker.getPeers
+      end
 
-          # check here if we're done with the file
-          if fileio.recheckComplete == "100."
-            puts "Starting as Seed. (#{t_name})" 
-            tracker.setLeft( 0 )
-            tracker.sendRequest("started")
+      begin
+        (0..numSpawn).each { |n|
+          tList << Thread.new {
             peer = Peer.new(tracker, fileio)
-            seedCon = TCPServer.new( 6889 ) #arbitrary port
-            begin
-              loop do
-                client = seedCon.accept
-                peer.seed( client )
-              end
-            rescue Interrupt
-              tracker.sendRequest("stopped")
-            end
-          else
-            puts "Starting as Peer. (#{t_name})"
-            tracker.sendRequest("started")
-            peer = Peer.new(tracker, fileio)
-            peer.connect(ARGV[0].to_i)
-          end
+            peer.connect(n)
+          }
         }
-      }
+      rescue Interrupt
+        puts "Stopping peer."
+        tracker.sendRequest("stopped")
+      end
     }
 
     tList.each { |t|
       t.join
     }
+    seedThread.join
     
     # TODO: eventually for off here to other peers
     # TODO: Detect timeouts in each peer connection
