@@ -171,10 +171,6 @@ class Workers
   
 end
 
-unless ARGV.length == 1
-  abort("Invalid number of arguments. Usage: ruby client.rb [config]")
-end
-
 # use default config so that states are stored across sessions? or let user
 # specify? (default for now)
 config = SessionConfig.new("config/config.yaml") 
