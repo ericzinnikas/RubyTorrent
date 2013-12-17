@@ -342,7 +342,8 @@ class Peer
           # now exit
           # and trigger all other threads to exit
           @tracker.sendRequest("completed")
-          exit #Don't necessarily need to stop now. Unless connection is closed.
+          return true
+          #exit #Don't necessarily need to stop now. Unless connection is closed.
         else
           puts "Recheck failed."
         end
