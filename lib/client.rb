@@ -197,7 +197,10 @@ class Client
         label_cols << ["Progress", 0.325]
         
         torrent_cols = Array.new
-        torrents.each_with_index { |torrent, data, i|
+        torrents.each_with_index { |object, i|
+          torrent = object[0]
+          data = object[1]
+         
           # generate perentage bar
           num_spacers = label_cols.length + 1
           percentage_width = label_cols[3][1] * (cols_width - num_spacers)
