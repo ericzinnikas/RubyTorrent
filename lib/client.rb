@@ -1,13 +1,14 @@
 # Handle the higher-level logic of downloading and seeding torrent files.
 
 require 'thread'
+require_relative 'config'
 
 module Torrent
 
 class Client
-  @torrent_file = nil
+  @config = nil
 
-  def initialize(file) 
+  def initialize(config) 
     require_relative "bencode"
     require_relative "bitfield"
     require_relative "fileio"
@@ -15,17 +16,21 @@ class Client
     require_relative "peer"
     require_relative "tracker"
     
-    @torrent_directory = file
+    @config = config
   end
   
   def runClient
     tList = Array.new
-    Dir.chdir(@torrent_directory) {
-      Dir.glob("*.torrent") { |name|
-        name = Dir.pwd + "/" + name
+    @config.getTorrents.each { |i, torrent_data|
+      dir_path = torrent_data["file-dir"]
+      if dir_path.nil?
+        dir_path = Dir.pwd
+      end
+      Dir.chdir(dir_path) {
+        t_name = torrent_data["torrent-file"]
         tList << Thread.new {
-          puts "Loading #{name}"
-          fh = File.new(name, "r")
+          puts "Loading #{t_name}"
+          fh = File.new(dir_path + t_name, "r")
           metainfo = Metainfo.new(fh)
           
           fileio = FileIO.new(metainfo.getInfo)
@@ -40,7 +45,7 @@ class Client
 
           # check here if we're done with the file
           if fileio.recheckComplete == "100."
-            puts "Starting as Seed. (#{name})" 
+            puts "Starting as Seed. (#{t_name})" 
             tracker.setLeft( 0 )
             tracker.sendRequest("started")
             peer = Peer.new(tracker, fileio)
@@ -54,10 +59,10 @@ class Client
               tracker.sendRequest("stopped")
             end
           else
-            puts "Starting as Peer. (#{name})"
+            puts "Starting as Peer. (#{t_name})"
             tracker.sendRequest("started")
             peer = Peer.new(tracker, fileio)
-            peer.connect(ARGV[1].to_i)
+            peer.connect(ARGV[0].to_i)
           end
         }
       }
@@ -112,11 +117,15 @@ class Workers
   
 end
 
-unless ARGV.length == 2
-  abort("Invalid number of arguments. Usage: ruby client.rb [file] [peer]")
+unless ARGV.length == 1
+  abort("Invalid number of arguments. Usage: ruby client.rb [peer]")
 end
 
-client = Client.new(ARGV[0])
+# use default config so that states are stored across sessions? or let user
+# specify? (default for now)
+config = SessionConfig.new("config/config.yaml") 
+
+client = Client.new(config)
 client.runClient
 
 end

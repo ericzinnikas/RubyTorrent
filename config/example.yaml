@@ -1,9 +1,9 @@
 torrent0:
-  - torrent-file: samplepictures.torrent
-    file-dir: torrents/
-    download-dir: downloads/
+   torrent-file: samplepictures.torrent
+   file-dir: torrents/
+   download-dir: downloads/
 
 torrent1:
-  - torrent-file: samplepictures.torrent
-    file-dir: torrents/
-    download-dir: downloads/
+   torrent-file: samplepictures.torrent
+   file-dir: torrents/
+   download-dir: downloads/
