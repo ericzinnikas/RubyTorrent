@@ -106,7 +106,6 @@ class Client
         puts "\nStopping seed."
         tracker.sendRequest("stopped")
       end 
-      exit
     }
     
     tList = Array.new
@@ -143,7 +142,6 @@ class Client
               peer = Peer.new(tracker, fileio)
               peer.connect(n)
               Thread.current["peer"] = false
-              exit
             }
           }
         rescue Interrupt
