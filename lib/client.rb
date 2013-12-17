@@ -201,7 +201,6 @@ class Client
         out_string += row_splitter
         out_string += get_columns_string(label_cols, cols_width)
         out_string +=  row_splitter
-        out_string +=  row_splitter
         torrent_cols.each { |torrent_col|
           out_string += get_columns_string(torrent_col, cols_width)
         }
