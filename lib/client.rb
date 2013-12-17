@@ -73,10 +73,10 @@ class Client
             if $verb
               puts "\nSeeding to client #{client_con[1]}:#{client_con[0]}"
             end
-            Thread.current["torrent-file"] = hashAssoc[mi.getInfoHash][0].split("/").last
+            
+            Thread.current["torrent-file"] = hashAssoc[recv_hash][0].split("/").last
             
             fh = File.new( recv_path, "r")
-            
             metainfo = Metainfo.new(fh)
             fileio = FileIO.new( metainfo.getInfo, hashAssoc[recv_hash][2] )
             tracker = Tracker.new( metainfo )  
@@ -184,8 +184,9 @@ class Client
         # cols = [["Column name", col_width], ...]
         label_cols = Array.new
         label_cols << ["Torrent Name", 40]
-        label_cols << ["Seeds", 10]
-        label_cols << ["Peers", 10]
+        label_cols << ["Seeds", 6]
+        label_cols << ["Peers", 6]
+        label_cols << ["Progress", 23]
         
         torrent_cols = Array.new
         torrents.each { |torrent, data|
@@ -205,9 +206,7 @@ class Client
           out_string += get_columns_string(torrent_col, cols_width)
         }
         
-        STDOUT.write "\e[2J\e[f" # clears screen. portable?
-        STDOUT.write out_string
-        STDOUT.write get_percentage_bar(0.73205, 80)
+        STDOUT.write "\e[2J\e[f" + out_string # 1st part clears screen, portable?
       }
     rescue Interrupt
       puts "\n\nCaught Interrupt. Exiting."
