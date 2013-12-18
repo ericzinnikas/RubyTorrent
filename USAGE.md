@@ -2,7 +2,7 @@
 
 ###Libraries
 
-Our implementation is split into six different classes/files:
+Our implementation is split into eight different classes/files:
 
 1. `bencode.rb` --> Our bencoding library.
 2. `bitfield.rb` --> Handles manipulation of piece/block states.
@@ -10,6 +10,8 @@ Our implementation is split into six different classes/files:
 4. `metainfo.rb` --> Parsing of .torrent files.
 5. `peer.rb` --> Peer protocol messages and logic.
 6. `tracker.rb` --> Tracker communication logic.
+7. `client.rb` --> User interface for the implementation.
+8. `config.rb` --> Client configuration loading logic.
 
 ####Bencode
 
@@ -92,6 +94,29 @@ tr.sendRequest( event )   #Fires "started", "stopped", "completed" events
 
 tr.getPeers   #Returns a list of peers for the torrent
 ```
+
+####Client
+
+The Client class is a higher-level class which contains the user interface and handles the higher-level logic of using our BitTorrent implementation. This class is run from the console to use our BitTorrent client.
+
+````
+ruby ./lib/client.rb
+````
+
+####Config
+
+This class loads YAML config files of the torrents that the client will download or seed.
+
+````
+cfg = Torrent::Config.new( filepath )  #Load the config from the
+                                       #specified YAML file.
+                                      
+cfg.getTorrents   #Returns a hash containing the data about
+                  #the torrents from the config file.
+                  
+cfg.add_torrent( torrent_info )   #Adds the specified torrent to the loaded
+                                  #hash and saves it to the file.
+````
 
 ###Sample Code
 A functional client implementation can be seen in `client.rb`.  A basic interface is provided to download and seed files.  Specific configuration can be made in the `./config/config.yaml` file.
