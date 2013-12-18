@@ -25,7 +25,9 @@ bf.set_bit( index )     #Set specified index
 bf.check_bit( index )   #Check if index is set
 bf.clear_bit( index )   #Clear index
 
-bf.bits_to_get( bitfield )    #Returns array of bit indicies (i.e. pieces) that are available to get from a given bitfield (e.g. what pieces does this peer have that we don't?)
+bf.bits_to_get( bitfield )    #Returns array of bit indicies (i.e. pieces) that are available
+                              #to get from a given bitfield (e.g. what pieces does this peer
+                              #have that we don't?)
 
 bf.to_binary_data( data )     #Export bitfield
 bf.from_binary_data( data )   #Import bitfield
@@ -38,9 +40,12 @@ bf.to_binary_string   #Human readible output
 FileIO manages reading and writing of specific pieces, and hash verification of torrents.
 
 ```ruby
-fio = Torrent::FileIO.new( info_hash, prefix_dir )    #Initialize with an info hash (from a metainfo file) and prefix directory where torrents will be downloaded to
+fio = Torrent::FileIO.new( info_hash, prefix_dir )    #Initialize with an info hash (from a
+                                                      #metainfo file) and prefix directory
+                                                      #where torrents will be downloaded to
 
-fio.gen_initial_states    #Calculate current file completion (if any, and initialize file space on disk)
+fio.gen_initial_states    #Calculate current file completion (if any, and initialize file
+                          #space on disk)
 
 fio.recheckComplete   #Return percentage completion (and run hash verification)
 
@@ -64,7 +69,8 @@ mi = Torrent::Metainfo.new( fh )    #Load metainfo (torrent) file
 The Peer class implements the BitTorrent peer protocol and provides methods to validate protocol handshakes, and fire events on specific messages.
 
 ```ruby
-pr = Torrent::Peer.new( tracker, fileio )   #Initialize a new peer, with related Tracker and FileIO
+pr = Torrent::Peer.new( tracker, fileio )   #Initialize a new peer, with related
+                                            #Tracker and FileIO
 
 pr.connect( socket )    #Connect to a new peer (for downloading)
 pr.seed( socket )       #Connect to a new peer (as a seed)
@@ -75,9 +81,11 @@ pr.seed( socket )       #Connect to a new peer (as a seed)
 This class manages interaction with a tracker.
 
 ```ruby
-tr = Torrent::Tracker.new( metainfo )   #Initialize a new tracker, with a related Metainfo file
+tr = Torrent::Tracker.new( metainfo )   #Initialize a new tracker, with a
+                                        #related Metainfo file
 
-tr.urlencode( string )    #Encode and Decode methods are provided for data transformation
+tr.urlencode( string )    #Encode and Decode methods are provided for
+                          #data transformation
 tr.urldecode( string )
 
 tr.sendRequest( event )   #Fires "started", "stopped", "completed" events
