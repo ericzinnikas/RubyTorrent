@@ -450,7 +450,7 @@ class Peer
           # and trigger all other threads to exit
           @tracker.sendRequest("completed")
           Thread.current["nowSeed"] == true
-          Thread.current["completed"] = 1
+          $perc[Thread.current["torrent-file"]] = 1
           return true
           #exit #Don't necessarily need to stop now. Unless connection is closed.
         else
@@ -462,7 +462,7 @@ class Peer
         if $verb
           puts "File #{perc}% complete (#{@fileio.getComplete}/#{@fileio.getTotal})."
         end
-        Thread.current["completed"] = perc.to_f / 100
+        $perc[Thread.current["torrent-file"]] = 1
       end
     when 8
       if $verb

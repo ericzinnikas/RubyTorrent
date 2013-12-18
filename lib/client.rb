@@ -125,6 +125,7 @@ class Client
       metainfo = Metainfo.new(fh)
       
       fileio = FileIO.new(metainfo.getInfo, torrent_data["download-dir"])
+      $perc[t_name] = fileio.getComplete / fileio.getTotal
       tracker = Tracker.new(metainfo)
       leftBytes = (fileio.getTotal - fileio.getComplete) * fileio.getPieceLength
       if (fileio.getBitfield.check_bit(fileio.getTotal - 1) == 0)
@@ -163,16 +164,15 @@ class Client
         # torrents = ["torrent name" => [seed_num, peer_num], ...]
         torrents = Hash.new
         @config.getTorrents.each { |i, torrent_data|
-          torrents[torrent_data["torrent-file"]] = [0, 0, 0]
+          completed = $perc[torrent_data["torrent-file"]]
+          if completed.nil?
+            completed = 0
+          end
+          torrents[torrent_data["torrent-file"]] = [0, 0, completed]
         }
 
         tList.each { |t|
           if t["peer"] == true
-            if t["completed"].nil?
-              torrents[t["torrent-file"]][2] = 0
-            else
-              torrents[t["torrent-file"]][2] = t["completed"]
-            end
             if t["nowSeed"] == true
               torrents[t["torrent-file"]][0] += 1
             else
@@ -312,7 +312,7 @@ class Client
     line += "|"
     content_width = width - (cols.length + 1) # accounts for vertical spacers
     cols.each { |col|
-      col_width = content_width * col[1]
+      col_width = (content_width * col[1]).to_i
       col_label = col[0].slice(0, col_width)
       space_width = 0
       if col_width > col[0].length
@@ -384,6 +384,8 @@ if ARGV.length == 1 && ARGV[0] == "verbose"
 else
   $verb = false
 end
+
+$perc = Hash.new
 
 # use default config so that states are stored across sessions? or let user
 # specify? (default for now)
