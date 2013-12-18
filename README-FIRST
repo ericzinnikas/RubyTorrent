@@ -1,4 +1,5 @@
-Specify torrent(s) to download in ./config/config.yaml
-Then execute `ruby lib/client.rb`
+1)  Specify torrent(s) to download in ./config/config.yaml
+2)  Execute `ruby lib/client.rb` (requires ruby v2.0.0)
 
-# Requires ruby 2.0.0
+!)  Operation of UI controlled by sending interrupt (Ctrl-C)
+    and then specifying menu commands.
