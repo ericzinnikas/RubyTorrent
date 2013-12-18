@@ -462,7 +462,7 @@ class Peer
         if $verb
           puts "File #{perc}% complete (#{@fileio.getComplete}/#{@fileio.getTotal})."
         end
-        $perc[Thread.current["torrent-file"]] = perc / 100
+        $perc[Thread.current["torrent-file"]] = perc.to_f / 100
       end
     when 8
       if $verb
