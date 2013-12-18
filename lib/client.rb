@@ -185,7 +185,6 @@ class Client
           if t["seed"] == true
             torrents[t["torrent-file"]][0] += 1
           end
-          torrents[t["torrent-file"]][2] = 1
         }
 
         # account for any changes to terminal window size
