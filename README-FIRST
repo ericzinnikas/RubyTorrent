@@ -1,0 +1,4 @@
+Specify torrent(s) to download in ./config/config.yaml
+Then execute `ruby lib/client.rb`
+
+# Requires ruby 2.0.0
