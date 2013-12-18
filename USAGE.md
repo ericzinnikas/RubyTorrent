@@ -1,20 +1,89 @@
 #Program Usage
 
-###Example 1
-Reading in a torrent file, parsing it, sending an initial request to the tracker and parsing the response.
+###Libraries
 
+Our implementation is split into six different classes/files:
 
+1. `bencode.rb` --> Our bencoding library.
+2. `bitfield.rb` --> Handles manipulation of piece/block states.
+3. `fileio.rb` --> Everything related to saving blocks/hashing/etc.
+4. `metainfo.rb` --> Parsing of .torrent files.
+5. `peer.rb` --> Peer protocol messages and logic.
+6. `tracker.rb` --> Tracker communication logic.
+
+####Bencode
+
+Our Bencode class provides `.is_bencoded?`, `.to_bencode`, and `.parse_bencode` methods for each of `String`, `Integer`, `Array`, and `Hash` data types.
+
+####Bitfield
+
+The Bitfield class can be used as follows:
 ```ruby
-require './lib/bencode.rb'
-require './lib/metainfo.rb'
-require './lib/tracker.rb'
+bf = Torrent::Bitfield.new( size )   #Initialize bitfield with length size
 
-fh = File.new("torrents/linuxmint.torrent", "r")
-mi = Torrent::Metainfo.new( fh ) # load/parse the metainfo (torrent) file
-tr = Torrent::Tracker.new( mi ) # setup our tracker connection & data
-tr.sendRequest("stopped") # send a sample "stopped" request
+bf.set_bit( index )     #Set specified index
+bf.check_bit( index )   #Check if index is set
+bf.clear_bit( index )   #Clear index
+
+bf.bits_to_get( bitfield )    #Returns array of bit indicies (i.e. pieces) that are available to get from a given bitfield (e.g. what pieces does this peer have that we don't?)
+
+bf.to_binary_data( data )     #Export bitfield
+bf.from_binary_data( data )   #Import bitfield
+
+bf.to_binary_string   #Human readible output
 ```
 
+####FileIO
 
-And we'll recieve this hash back: **{"interval"=>1800, "min interval"=>300,"peers"=>""}**
+FileIO manages reading and writing of specific pieces, and hash verification of torrents.
 
+```ruby
+fio = Torrent::FileIO.new( info_hash, prefix_dir )    #Initialize with an info hash (from a metainfo file) and prefix directory where torrents will be downloaded to
+
+fio.gen_initial_states    #Calculate current file completion (if any, and initialize file space on disk)
+
+fio.recheckComplete   #Return percentage completion (and run hash verification)
+
+fio.set_piece_bytes( piece_index, begin_offset, bytes )   #Set piece
+fio.get_piece_bytes( piece_index )    #Get piece
+fio.get_piece_hash( piece_index )     #Get piece hash
+```
+
+####Metainfo
+
+This class handles parsing of torrent files.  All computation is done upon initialization, various getter methods are provided to access the parsed data.
+
+```ruby
+fh = File.new("file.torrent", "r")
+
+mi = Torrent::Metainfo.new( fh )    #Load metainfo (torrent) file
+```
+
+####Peer
+
+The Peer class implements the BitTorrent peer protocol and provides methods to validate protocol handshakes, and fire events on specific messages.
+
+```ruby
+pr = Torrent::Peer.new( tracker, fileio )   #Initialize a new peer, with related Tracker and FileIO
+
+pr.connect( socket )    #Connect to a new peer (for downloading)
+pr.seed( socket )       #Connect to a new peer (as a seed)
+```
+
+####Tracker
+
+This class manages interaction with a tracker.
+
+```ruby
+tr = Torrent::Tracker.new( metainfo )   #Initialize a new tracker, with a related Metainfo file
+
+tr.urlencode( string )    #Encode and Decode methods are provided for data transformation
+tr.urldecode( string )
+
+tr.sendRequest( event )   #Fires "started", "stopped", "completed" events
+
+tr.getPeers   #Returns a list of peers for the torrent
+```
+
+###Sample Code
+A functional client implementation can be seen in `client.rb`.  A basic interface is provided to download and seed files.  Specific configuration can be made in the `./config/config.yaml` file.
