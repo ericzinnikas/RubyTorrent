@@ -1,14 +1,15 @@
 #RubyTorrent
 
-Started off as a class project for CMSC417 at UMD with Bobby, hopefully we'll get some development going forward over the next few months.
+Started off as a class project at UMD in CMSC417 with Bobby, hopefully we'll get some development going forward over the next few months.
 
-###Description
+###Plan
 * Implement a BitTorrent client
   + Should be able to interoperate with commercial/open-source clients
 - Demonstrate our implementation downloads files within **10%** of the speed of an official client (with a comprable number of peers)
 - Devise an experiment to demonstrate our client is *fast enough* and *stable* in comparison to the official BitTorrent client
 
-###Wishlist:
+###Wishlist
+* Useable interface
 * DHT tracker
 * PropShare[1], compare performance to official client
 * Under-reporting, compare performance to official client
