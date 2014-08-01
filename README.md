@@ -1,6 +1,6 @@
 #RubyTorrent
 
-Started off as a class project, hopefully we'll get some development going forward over the next few months.
+Started off as a class project for CMSC417 at UMD with Bobby, hopefully we'll get some development going forward over the next few months.
 
 ###Description
 * Implement a BitTorrent client
