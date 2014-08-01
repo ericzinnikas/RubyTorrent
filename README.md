@@ -1,5 +1,6 @@
-#CMSC417 Fall 2013
-##BitTorrent Final Project
+#RubyTorrent
+
+Started off as a class project, hopefully we'll get some development going forward over the next few months.
 
 ###Description
 * Implement a BitTorrent client
@@ -7,16 +8,11 @@
 - Demonstrate our implementation downloads files within **10%** of the speed of an official client (with a comprable number of peers)
 - Devise an experiment to demonstrate our client is *fast enough* and *stable* in comparison to the official BitTorrent client
 
-###Extra Credit Implementations:
+###Wishlist:
 * DHT tracker
 * PropShare[1], compare performance to official client
 * Under-reporting, compare performance to official client
 * A protocol to detect under-reporting
-
-###Details
-* May use third-party bencode library
-* May use language of choice
-* Work in teams of two
 
 ###Notes
 * See [here](NOTES.md)
